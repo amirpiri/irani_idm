@@ -46,7 +46,7 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 2. Open the **Actions** tab, select **Build**, and click **Run workflow** (it also runs on every push to `main` and on pull requests).
 3. When it finishes, download the installers/APK from the run's **Artifacts**
    (`irani-idm-Windows`: .msi + .exe, `irani-idm-Linux`: .deb + .rpm + .AppImage,
-   `irani-idm-Android`: ARM64 APK).
+   `irani-idm-Android`: installable debug-signed ARM64 APK for Android phones such as the Samsung Galaxy A54).
 4. To publish a desktop release: `git tag v0.1.0 && git push origin v0.1.0` — the desktop installers are attached to a GitHub Release automatically.
 
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.

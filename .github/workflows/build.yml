@@ -117,9 +117,21 @@ jobs:
         working-directory: src-tauri
         run: cargo tauri android init --ci --skip-targets-install
 
-      - name: Build ARM64 APK
+      - name: Build installable ARM64 debug APK
         working-directory: src-tauri
-        run: cargo tauri android build --apk --target aarch64 --ci
+        run: cargo tauri android build --apk --target aarch64 --debug --ci
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          mapfile -t apks < <(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk')
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "No Android APKs were produced."
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
