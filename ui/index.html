@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rust DM</title>
+<style>
+:root{--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
+@media (prefers-color-scheme:dark){:root{--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;user-select:none}
+button,input,select,textarea{font:inherit;color:inherit}
+#bar{display:flex;gap:2px;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.tb{background:none;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
+.tb:hover{background:var(--bg)}.tb i{font-style:normal;font-size:22px}.tb span{font-size:12px}
+.sep{width:1px;background:var(--bd);margin:4px 6px}
+#main{flex:1;display:flex;min-height:0}
+#side{width:200px;background:var(--card);border-inline-start:1px solid var(--bd);padding:8px;overflow:auto;order:2}
+#side h4{margin:4px 8px 8px}
+.cat{padding:7px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between}
+.cat:hover{background:var(--bg)}.cat.on{background:var(--sel)}
+#content{flex:1;display:flex;flex-direction:column;padding:10px;gap:10px;min-width:0;order:1}
+#top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stat{background:var(--card);padding:10px 16px;border-radius:12px;font-weight:600}
+#q{flex:1;min-width:160px;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);user-select:text}
+#tw{flex:1;overflow:auto;background:var(--card);border-radius:12px;border:1px solid var(--bd)}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--card);text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd);font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+tr.r{cursor:default}tr.r.sel{background:var(--sel)}
+td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
+.pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
+.pb>div{height:100%;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
+.pb b{position:absolute;inset:0;text-align:center;font-size:11px;line-height:16px}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw)}
+dialog::backdrop{background:#0006}
+dialog h3{margin:0 0 10px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}.row span:first-child{color:var(--mut)}
+.url{direction:ltr;text-align:start;word-break:break-all;font-size:12px;user-select:text;margin-bottom:8px}
+textarea{width:100%;height:110px;direction:ltr;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn{padding:7px 16px;border-radius:8px;border:1px solid var(--bd);background:var(--card);cursor:pointer}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.sg{max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px}
+.sg td,.sg th{padding:3px 8px}
+.fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+</style>
+</head>
+<body>
+<div id="bar">
+  <button class="tb" onclick="openAdd()"><i>➕</i><span data-i="add"></span></button>
+  <button class="tb" onclick="act('resume')"><i>▶️</i><span data-i="resume"></span></button>
+  <button class="tb" onclick="act('pause')"><i>⏹️</i><span data-i="stop"></span></button>
+  <button class="tb" onclick="invoke('pause_all')"><i>✋</i><span data-i="stopAll"></span></button>
+  <div class="sep"></div>
+  <button class="tb" onclick="del()"><i>🗑️</i><span data-i="del"></span></button>
+  <button class="tb" onclick="delDone()"><i>🧹</i><span data-i="delDone"></span></button>
+  <div class="sep"></div>
+  <button class="tb" onclick="openSet()"><i>⚙️</i><span data-i="settings"></span></button>
+  <button class="tb" onclick="invoke('resume_all')"><i>📥</i><span data-i="startQ"></span></button>
+</div>
+<div id="main">
+  <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
+  <div id="content">
+    <div id="top">
+      <div class="stat" id="sSpeed"></div><div class="stat" id="sAct"></div><div class="stat" id="sDone"></div>
+      <input id="q" data-p="search" oninput="q=this.value.toLowerCase();render()">
+    </div>
+    <div id="tw"><table><thead><tr>
+      <th data-i="name"></th><th data-i="size"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+</div>
+
+<dialog id="dAdd"><h3 data-i="addTitle"></h3>
+  <div data-i="addHint" style="color:var(--mut);margin-bottom:6px"></div>
+  <textarea id="urls" placeholder="https://"></textarea>
+  <div class="acts"><button class="btn" onclick="dAdd.close()" data-i="cancel"></button><button class="btn p" onclick="doAdd()" data-i="ok"></button></div>
+</dialog>
+
+<dialog id="dSet"><h3 data-i="settings"></h3>
+  <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
+  <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
+  <div class="fld"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"></div>
+  <div class="acts"><button class="btn" onclick="dSet.close()" data-i="cancel"></button><button class="btn p" onclick="saveSet()" data-i="ok"></button></div>
+</dialog>
+
+<dialog id="dDet">
+  <h3 id="dName"></h3><div class="url" id="dUrl"></div>
+  <div class="pb" style="height:20px;margin-bottom:8px"><div id="dBar"></div><b id="dPct" style="line-height:20px"></b></div>
+  <div class="row"><span data-i="status"></span><span id="dSt"></span></div>
+  <div class="row"><span data-i="size"></span><span id="dSz"></span></div>
+  <div class="row"><span data-i="downloaded"></span><span id="dDl"></span></div>
+  <div class="row"><span data-i="speed"></span><span id="dSp"></span></div>
+  <div class="row"><span data-i="timeLeft"></span><span id="dEta"></span></div>
+  <div class="row"><span data-i="resumable"></span><span id="dRs"></span></div>
+  <div class="row"><span data-i="limit"></span><span><input id="dLim" type="number" min="0" style="width:90px"> KB/s <button class="btn" onclick="setLim()" data-i="ok"></button></span></div>
+  <div class="sg"><table><thead><tr><th>#</th><th data-i="downloaded"></th><th data-i="info"></th></tr></thead><tbody id="dSeg"></tbody></table></div>
+  <div class="acts">
+    <button class="btn" onclick="invoke('open_item',{id:detId,folder:true})" data-i="openFolder"></button>
+    <button class="btn" onclick="invoke('open_item',{id:detId,folder:false})" data-i="openFile"></button>
+    <button class="btn" id="dTog" onclick="toggle(detId)"></button>
+    <button class="btn p" onclick="dDet.close()" data-i="close"></button>
+  </div>
+</dialog>
+
+<script>
+const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
+const T={
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",
+ search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
+ addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",
+ limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",
+ all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
+ st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
+ active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",
+ search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
+ addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",
+ limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",
+ all:"همه دانلودها",compressed:"فایلهای فشرده",documents:"اسناد",music:"موسیقی",programs:"برنامه ها",video:"تصویری",images:"تصاویر",unfinished:"ناتمام",completed:"تکمیل شده",
+ st_downloading:"در حال دریافت…",st_paused:"متوقف",st_completed:"کامل",st_error:"خطا",rx:"در حال دریافت…",done:"انجام شد",wait:"در انتظار",
+ active:"فعال",complete:"کامل",pauseB:"ایست",resumeB:"ادامه",delFile:"فایل از دیسک هم حذف شود؟",h:"ساعت",m:"دقیقه",s:"ثانیه"}};
+const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx xls xlsx ppt pptx txt epub odt",music:"mp3 flac wav aac ogg m4a",
+ programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
+const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
+let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
+let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="", detId=null;
+const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
+const nf=(n,d=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:d}).format(n);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function bytes(n){if(n==null)return"—";const u=["B","KB","MB","GB","TB"];let i=0;while(n>=1024&&i<4){n/=1024;i++}return nf(n,i?2:0)+" "+u[i]}
+function dur(s){if(s==null)return"—";const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+ return [h&&nf(h,0)+" "+t("h"),(h||m)&&nf(m,0)+" "+t("m"),nf(x,0)+" "+t("s")].filter(Boolean).join(" ")}
+const pct=d=>d.total?Math.min(100,d.downloaded/d.total*100):(d.status==="completed"?100:0);
+const catOf=d=>{const e=d.name.split(".").pop().toLowerCase();return Object.keys(EXT).find(k=>EXT[k].split(" ").includes(e))};
+
+function applyLang(){
+ document.documentElement.lang=lang;document.documentElement.dir=lang==="fa"?"rtl":"ltr";
+ document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
+ document.querySelectorAll("[data-p]").forEach(e=>e.placeholder=t(e.dataset.p));
+ render();
+}
+function render(){
+ const vis=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));
+ $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
+  const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
+  return `<tr class="r ${d.id===sel?"sel":""}" data-id="${d.id}"><td class="n" title="${esc(d.name)}">${esc(d.name)}</td><td>${bytes(d.total)}</td>
+  <td><div class="pb ${c}"><div style="width:${p}%"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
+  <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
+ $("cats").innerHTML=CATS.map(c=>`<div class="cat ${c===cat?"on":""}" data-c="${c}"><span>${t(c)}</span></div>`).join("");
+ const act=data.filter(d=>d.status==="downloading");
+ $("sSpeed").textContent="⚡ "+bytes(act.reduce((a,d)=>a+d.speed,0))+"/s";
+ $("sAct").textContent=t("active")+" "+nf(act.length,0);
+ $("sDone").textContent=t("complete")+" "+nf(data.filter(d=>d.status==="completed").length,0);
+ if($("dDet").open)renderDet();
+}
+function renderDet(){
+ const d=data.find(x=>x.id===detId);if(!d){$("dDet").close();return}
+ $("dName").textContent=d.name;$("dUrl").textContent=d.url;
+ const p=pct(d);$("dBar").style.width=p+"%";$("dPct").textContent=nf(p)+"%";
+ $("dSt").textContent=t("st_"+d.status);$("dSz").textContent=bytes(d.total);$("dDl").textContent=bytes(d.downloaded);
+ $("dSp").textContent=bytes(d.speed)+"/s";$("dEta").textContent=d.status==="downloading"?dur(d.eta):"—";
+ $("dRs").textContent=d.resumable?t("yes"):t("no");
+ if(document.activeElement!==$("dLim"))$("dLim").value=d.limit_kbps;
+ $("dTog").textContent=d.status==="downloading"?t("pauseB"):t("resumeB");$("dTog").disabled=d.status==="completed";
+ $("dSeg").innerHTML=d.segments.map((s,i)=>`<tr><td>${nf(i+1,0)}</td><td>${bytes(s.done)}</td><td>${t(["wait","rx","done"][s.state])}</td></tr>`).join("");
+}
+const toggle=id=>{const d=data.find(x=>x.id===id);if(d)invoke(d.status==="downloading"?"pause":"resume",{id})};
+const act=c=>sel!=null&&invoke(c,{id:sel});
+function del(){if(sel==null)return;invoke("remove",{id:sel,deleteFile:confirm(t("delFile"))});sel=null}
+function delDone(){data.filter(d=>d.status==="completed").forEach(d=>invoke("remove",{id:d.id,deleteFile:false}))}
+function setLim(){invoke("set_limit",{id:detId,kbps:Math.max(0,+$("dLim").value||0)})}
+async function openAdd(){$("urls").value="";try{const c=(await navigator.clipboard.readText()).trim();if(/^https?:\/\//i.test(c))$("urls").value=c}catch{}$("dAdd").showModal()}
+async function doAdd(){
+ const list=$("urls").value.split(/\s+/).filter(Boolean);$("dAdd").close();
+ for(const url of list){try{await invoke("add_download",{url,dir:dir||null,connections:conns})}catch(e){alert(url+"\n"+e)}}
+}
+function openSet(){$("sLang").value=lang;$("sConn").value=conns;$("sDir").value=dir;$("dSet").showModal()}
+function saveSet(){lang=$("sLang").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
+ localStorage.lang=lang;localStorage.conns=conns;localStorage.dir=dir;$("dSet").close();applyLang()}
+$("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
+$("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr");if(r){detId=+r.dataset.id;renderDet();$("dDet").showModal()}});
+$("cats").addEventListener("click",e=>{const c=e.target.closest(".cat");if(c){cat=c.dataset.c;render()}});
+listen("downloads",e=>{data=e.payload;render()});
+applyLang();
+</script>
+</body>
+</html>

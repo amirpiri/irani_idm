@@ -1,0 +1,18 @@
+{
+  "productName": "Rust DM",
+  "version": "0.1.0",
+  "identifier": "com.example.rustdm",
+  "build": { "frontendDist": "../ui" },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      { "label": "main", "title": "Rust DM", "width": 1100, "height": 700, "minWidth": 820, "minHeight": 520 }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"]
+  }
+}
