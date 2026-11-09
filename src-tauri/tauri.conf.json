@@ -1,12 +1,12 @@
 {
-  "productName": "Rust DM",
+  "productName": "Irani IDM",
   "version": "0.1.0",
-  "identifier": "com.example.rustdm",
+  "identifier": "com.iranidm.desktop",
   "build": { "frontendDist": "../ui" },
   "app": {
     "withGlobalTauri": true,
     "windows": [
-      { "label": "main", "title": "Rust DM", "width": 1100, "height": 700, "minWidth": 820, "minHeight": 520 }
+      { "label": "main", "title": "Irani IDM", "width": 1100, "height": 700, "minWidth": 820, "minHeight": 520 }
     ],
     "security": { "csp": null }
   },

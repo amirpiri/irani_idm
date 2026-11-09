@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rust DM</title>
+<title>Irani IDM</title>
 <style>
-:root{--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
-@media (prefers-color-scheme:dark){:root{--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466}}
+:root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466;--ok:#22a45d;--er:#e45555}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{font:14px "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;user-select:none}
@@ -45,12 +45,18 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .sg{max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px}
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+#rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
+#rowMenu[hidden]{display:none}
+#rowMenu button{display:block;width:100%;padding:8px 12px;border:0;border-radius:5px;background:transparent;text-align:start;cursor:pointer}
+#rowMenu button:hover:not(:disabled){background:var(--bg)}
+#rowMenu button:disabled{opacity:.5;cursor:default}
+.menu-sep{height:1px;margin:4px 5px;background:var(--bd)}
 </style>
 </head>
 <body>
 <div id="bar">
   <button class="tb" onclick="openAdd()"><i>➕</i><span data-i="add"></span></button>
-  <button class="tb" onclick="act('resume')"><i>▶️</i><span data-i="resume"></span></button>
+  <button class="tb" onclick="resumeSelected()"><i>▶️</i><span data-i="resume"></span></button>
   <button class="tb" onclick="act('pause')"><i>⏹️</i><span data-i="stop"></span></button>
   <button class="tb" onclick="invoke('pause_all')"><i>✋</i><span data-i="stopAll"></span></button>
   <div class="sep"></div>
@@ -64,11 +70,11 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
   <div id="content">
     <div id="top">
-      <div class="stat" id="sSpeed"></div><div class="stat" id="sAct"></div><div class="stat" id="sDone"></div>
+      <div class="stat" id="sAct"></div><div class="stat" id="sDone"></div>
       <input id="q" data-p="search" oninput="q=this.value.toLowerCase();render()">
     </div>
     <div id="tw"><table><thead><tr>
-      <th data-i="name"></th><th data-i="size"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
+      <th data-i="name"></th><th data-i="size"></th><th data-i="connections"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </div>
@@ -81,44 +87,38 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 
 <dialog id="dSet"><h3 data-i="settings"></h3>
   <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
+  <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
   <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
   <div class="fld"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"></div>
   <div class="acts"><button class="btn" onclick="dSet.close()" data-i="cancel"></button><button class="btn p" onclick="saveSet()" data-i="ok"></button></div>
 </dialog>
 
-<dialog id="dDet">
-  <h3 id="dName"></h3><div class="url" id="dUrl"></div>
-  <div class="pb" style="height:20px;margin-bottom:8px"><div id="dBar"></div><b id="dPct" style="line-height:20px"></b></div>
-  <div class="row"><span data-i="status"></span><span id="dSt"></span></div>
-  <div class="row"><span data-i="size"></span><span id="dSz"></span></div>
-  <div class="row"><span data-i="downloaded"></span><span id="dDl"></span></div>
-  <div class="row"><span data-i="speed"></span><span id="dSp"></span></div>
-  <div class="row"><span data-i="timeLeft"></span><span id="dEta"></span></div>
-  <div class="row"><span data-i="resumable"></span><span id="dRs"></span></div>
-  <div class="row"><span data-i="limit"></span><span><input id="dLim" type="number" min="0" style="width:90px"> KB/s <button class="btn" onclick="setLim()" data-i="ok"></button></span></div>
-  <div class="sg"><table><thead><tr><th>#</th><th data-i="downloaded"></th><th data-i="info"></th></tr></thead><tbody id="dSeg"></tbody></table></div>
-  <div class="acts">
-    <button class="btn" onclick="invoke('open_item',{id:detId,folder:true})" data-i="openFolder"></button>
-    <button class="btn" onclick="invoke('open_item',{id:detId,folder:false})" data-i="openFile"></button>
-    <button class="btn" id="dTog" onclick="toggle(detId)"></button>
-    <button class="btn p" onclick="dDet.close()" data-i="close"></button>
-  </div>
-</dialog>
+<div id="rowMenu" role="menu" aria-label="Download actions" hidden>
+  <button type="button" role="menuitem" data-action="toggle"></button>
+  <div class="menu-sep" role="separator"></div>
+  <button type="button" role="menuitem" data-action="openFile" data-i="openFile"></button>
+  <button type="button" role="menuitem" data-action="openFolder" data-i="openFolder"></button>
+  <button type="button" role="menuitem" data-action="details" data-i="details"></button>
+  <div class="menu-sep" role="separator"></div>
+  <button type="button" role="menuitem" data-action="copyUrl" data-i="copyUrl"></button>
+  <div class="menu-sep" role="separator"></div>
+  <button type="button" role="menuitem" data-action="remove" data-i="del"></button>
+</div>
 
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",
- limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",
+ limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",
- limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",
+ limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
  all:"همه دانلودها",compressed:"فایلهای فشرده",documents:"اسناد",music:"موسیقی",programs:"برنامه ها",video:"تصویری",images:"تصاویر",unfinished:"ناتمام",completed:"تکمیل شده",
  st_downloading:"در حال دریافت…",st_paused:"متوقف",st_completed:"کامل",st_error:"خطا",rx:"در حال دریافت…",done:"انجام شد",wait:"در انتظار",
  active:"فعال",complete:"کامل",pauseB:"ایست",resumeB:"ادامه",delFile:"فایل از دیسک هم حذف شود؟",h:"ساعت",m:"دقیقه",s:"ثانیه"}};
@@ -126,8 +126,17 @@ const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
 let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
-let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="", detId=null;
+let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="";
+let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
 const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
+function applyTheme(){
+ const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
+ document.documentElement.dataset.theme=theme;
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
+window.addEventListener("storage",event=>{
+ if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
+});
 const nf=(n,d=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:d}).format(n);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function bytes(n){if(n==null)return"—";const u=["B","KB","MB","GB","TB"];let i=0;while(n>=1024&&i<4){n/=1024;i++}return nf(n,i?2:0)+" "+u[i]}
@@ -146,44 +155,96 @@ function render(){
  const vis=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));
  $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
+  const activeConnections=d.segments.filter(s=>s.state===1).length;
   return `<tr class="r ${d.id===sel?"sel":""}" data-id="${d.id}"><td class="n" title="${esc(d.name)}">${esc(d.name)}</td><td>${bytes(d.total)}</td>
+  <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
   <td><div class="pb ${c}"><div style="width:${p}%"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
  $("cats").innerHTML=CATS.map(c=>`<div class="cat ${c===cat?"on":""}" data-c="${c}"><span>${t(c)}</span></div>`).join("");
  const act=data.filter(d=>d.status==="downloading");
- $("sSpeed").textContent="⚡ "+bytes(act.reduce((a,d)=>a+d.speed,0))+"/s";
  $("sAct").textContent=t("active")+" "+nf(act.length,0);
  $("sDone").textContent=t("complete")+" "+nf(data.filter(d=>d.status==="completed").length,0);
- if($("dDet").open)renderDet();
+ if(!$("rowMenu").hidden)renderRowMenu();
 }
-function renderDet(){
- const d=data.find(x=>x.id===detId);if(!d){$("dDet").close();return}
- $("dName").textContent=d.name;$("dUrl").textContent=d.url;
- const p=pct(d);$("dBar").style.width=p+"%";$("dPct").textContent=nf(p)+"%";
- $("dSt").textContent=t("st_"+d.status);$("dSz").textContent=bytes(d.total);$("dDl").textContent=bytes(d.downloaded);
- $("dSp").textContent=bytes(d.speed)+"/s";$("dEta").textContent=d.status==="downloading"?dur(d.eta):"—";
- $("dRs").textContent=d.resumable?t("yes"):t("no");
- if(document.activeElement!==$("dLim"))$("dLim").value=d.limit_kbps;
- $("dTog").textContent=d.status==="downloading"?t("pauseB"):t("resumeB");$("dTog").disabled=d.status==="completed";
- $("dSeg").innerHTML=d.segments.map((s,i)=>`<tr><td>${nf(i+1,0)}</td><td>${bytes(s.done)}</td><td>${t(["wait","rx","done"][s.state])}</td></tr>`).join("");
+function hideRowMenu(){$("rowMenu").hidden=true}
+function renderRowMenu(){
+ const d=data.find(x=>x.id===sel);if(!d){hideRowMenu();return}
+ $("rowMenu").querySelector('[data-action="toggle"]').textContent=t(d.status==="downloading"?"pauseB":"resumeB");
+ $("rowMenu").querySelector('[data-action="toggle"]').disabled=d.status==="completed";
+ $("rowMenu").querySelector('[data-action="openFile"]').disabled=d.status!=="completed";
 }
-const toggle=id=>{const d=data.find(x=>x.id===id);if(d)invoke(d.status==="downloading"?"pause":"resume",{id})};
+
+async function openDownloadWindow(id){
+ try{await invoke("open_download_window",{id})}catch(e){alert(String(e))}
+}
+async function resumeDownload(id){
+ if(!data.some(d=>d.id===id))return;
+ try{await invoke("open_download_window",{id});await invoke("resume",{id})}
+ catch(e){alert(String(e))}
+}
+const resumeSelected=()=>{if(sel!=null)resumeDownload(sel)};
 const act=c=>sel!=null&&invoke(c,{id:sel});
 function del(){if(sel==null)return;invoke("remove",{id:sel,deleteFile:confirm(t("delFile"))});sel=null}
 function delDone(){data.filter(d=>d.status==="completed").forEach(d=>invoke("remove",{id:d.id,deleteFile:false}))}
-function setLim(){invoke("set_limit",{id:detId,kbps:Math.max(0,+$("dLim").value||0)})}
+async function runRowAction(action,id){
+ const d=data.find(x=>x.id===id);if(!d)return;
+ try{
+  switch(action){
+   case "toggle":
+    if(d.status==="downloading")await invoke("pause",{id});
+    else {await resumeDownload(id);return}
+    break;
+   case "openFile":await invoke("open_item",{id,folder:false});break;
+   case "openFolder":await invoke("open_item",{id,folder:true});break;
+   case "details":await invoke("open_download_window",{id});break;
+   case "copyUrl":await navigator.clipboard.writeText(d.url);break;
+   case "remove":del();break;
+  }
+ }catch(e){alert(action==="copyUrl"?t("copyFailed")+"\n"+e:String(e))}
+}
 async function openAdd(){$("urls").value="";try{const c=(await navigator.clipboard.readText()).trim();if(/^https?:\/\//i.test(c))$("urls").value=c}catch{}$("dAdd").showModal()}
 async function doAdd(){
  const list=$("urls").value.split(/\s+/).filter(Boolean);$("dAdd").close();
- for(const url of list){try{await invoke("add_download",{url,dir:dir||null,connections:conns})}catch(e){alert(url+"\n"+e)}}
+ for(const url of list){try{const id=await invoke("add_download",{url,dir:dir||null,connections:conns});await invoke("open_download_window",{id})}catch(e){alert(url+"\n"+e)}}
 }
-function openSet(){$("sLang").value=lang;$("sConn").value=conns;$("sDir").value=dir;$("dSet").showModal()}
-function saveSet(){lang=$("sLang").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
- localStorage.lang=lang;localStorage.conns=conns;localStorage.dir=dir;$("dSet").close();applyLang()}
+function openSet(){$("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;$("dSet").showModal()}
+function saveSet(){lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
+ localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;$("dSet").close();applyTheme();applyLang()}
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
-$("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr");if(r){detId=+r.dataset.id;renderDet();$("dDet").showModal()}});
+$("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)openDownloadWindow(+r.dataset.id)});
+$("tb").addEventListener("contextmenu",e=>{
+ const r=e.target.closest("tr.r");if(!r)return;
+ e.preventDefault();sel=+r.dataset.id;render();
+ const menu=$("rowMenu");menu.hidden=false;renderRowMenu();
+ const rect=menu.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(e.clientX,innerWidth-rect.width-8))+"px";
+ menu.style.top=Math.max(8,Math.min(e.clientY,innerHeight-rect.height-8))+"px";
+ menu.querySelector("button:not(:disabled)").focus({preventScroll:true});
+});
+document.addEventListener("contextmenu",e=>e.preventDefault());
+$("rowMenu").addEventListener("click",e=>{
+ const button=e.target.closest("button[data-action]");if(!button||button.disabled)return;
+ const action=button.dataset.action,id=sel;hideRowMenu();runRowAction(action,id);
+});
+document.addEventListener("pointerdown",e=>{if(!$("rowMenu").hidden&&!$("rowMenu").contains(e.target))hideRowMenu()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")hideRowMenu()});
+window.addEventListener("blur",hideRowMenu);
 $("cats").addEventListener("click",e=>{const c=e.target.closest(".cat");if(c){cat=c.dataset.c;render()}});
-listen("downloads",e=>{data=e.payload;render()});
+const activeDownloadWindows=new Set();
+listen("downloads",e=>{
+ data=e.payload;render();
+ const downloadIds=new Set(data.map(d=>d.id));
+ for(const id of activeDownloadWindows)if(!downloadIds.has(id))activeDownloadWindows.delete(id);
+ for(const download of data){
+  if(download.status==="downloading"&&!activeDownloadWindows.has(download.id)){
+   activeDownloadWindows.add(download.id);
+   invoke("open_download_window",{id:download.id}).catch(error=>alert(String(error)));
+  }else if(download.status!=="downloading"){
+   activeDownloadWindows.delete(download.id);
+  }
+ }
+}).catch(error=>alert("Could not monitor downloads: "+error));
+applyTheme();
 applyLang();
 </script>
 </body>

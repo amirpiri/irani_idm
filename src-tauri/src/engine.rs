@@ -55,6 +55,62 @@ struct Item {
     last: u64,
 }
 
+struct RateState {
+    tokens: f64,
+    rate: f64,
+    updated_at: Instant,
+}
+
+struct RateLimiter {
+    state: tokio::sync::Mutex<RateState>,
+}
+
+impl RateLimiter {
+    fn new() -> Self {
+        Self {
+            state: tokio::sync::Mutex::new(RateState {
+                tokens: 0.0,
+                rate: 0.0,
+                updated_at: Instant::now(),
+            }),
+        }
+    }
+
+    async fn acquire(&self, bytes: usize, limit: &AtomicU64, cancel: &AtomicBool) -> bool {
+        let mut remaining = bytes as f64;
+        while remaining > 0.0 {
+            if cancel.load(Relaxed) {
+                return false;
+            }
+            let kbps = limit.load(Relaxed);
+            if kbps == 0 {
+                return true;
+            }
+            let rate = kbps as f64 * 1024.0;
+            let mut state = self.state.lock().await;
+            let now = Instant::now();
+            let elapsed = now.duration_since(state.updated_at).as_secs_f64();
+            state.tokens = (state.tokens + elapsed * state.rate).min(state.rate);
+            state.updated_at = now;
+            if rate != state.rate {
+                state.tokens = state.tokens.min(rate);
+                state.rate = rate;
+            }
+
+            let needed = remaining.min(rate);
+            if state.tokens >= needed {
+                state.tokens -= needed;
+                remaining -= needed;
+            } else {
+                let wait = (needed - state.tokens) / rate;
+                drop(state);
+                sleep(Duration::from_secs_f64(wait.min(0.1))).await;
+            }
+        }
+        true
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct SavedSeg { start: u64, end: u64, done: u64 }
 #[derive(Serialize, Deserialize)]
@@ -75,7 +131,7 @@ pub struct SegView { done: u64, total: Option<u64>, state: u8 }
 #[derive(Serialize, Clone)]
 pub struct View {
     id: u64,
-    name: String,
+    pub name: String,
     url: String,
     path: String,
     total: Option<u64>,
@@ -87,6 +143,12 @@ pub struct View {
     resumable: bool,
     limit_kbps: u64,
     segments: Vec<SegView>,
+}
+
+impl View {
+    pub fn segment_count(&self) -> usize {
+        self.segments.len()
+    }
 }
 
 #[derive(Clone)]
@@ -186,43 +248,52 @@ impl Manager {
                 let inst = downloaded.saturating_sub(it.last) as f64 / dt.max(0.05);
                 it.last = downloaded;
                 it.speed = if it.status == Status::Downloading { it.speed * 0.6 + inst * 0.4 } else { 0.0 };
-                let eta = match (it.total, it.speed > 1.0) {
-                    (Some(t), true) => Some((t.saturating_sub(downloaded) as f64 / it.speed) as u64),
-                    _ => None,
-                };
-                let (status, error) = match &it.status {
-                    Status::Paused => ("paused", None),
-                    Status::Downloading => ("downloading", None),
-                    Status::Completed => ("completed", None),
-                    Status::Error(e) => ("error", Some(e.clone())),
-                };
-                View {
-                    id: *id,
-                    name: it.path.file_name().map(|n| n.to_string_lossy().into()).unwrap_or_default(),
-                    url: it.url.clone(),
-                    path: it.path.to_string_lossy().into(),
-                    total: it.total,
-                    downloaded,
-                    speed: it.speed as u64,
-                    eta,
-                    status,
-                    error,
-                    resumable: it.resumable,
-                    limit_kbps: it.limit.load(Relaxed),
-                    segments: it
-                        .segs
-                        .iter()
-                        .map(|s| SegView {
-                            done: s.done.load(Relaxed),
-                            total: if s.end == u64::MAX { None } else { Some(s.len()) },
-                            state: s.state.load(Relaxed),
-                        })
-                        .collect(),
-                }
+                Self::view_of(*id, it)
             })
             .collect();
         v.sort_by_key(|x| x.id);
         v
+    }
+
+    pub fn view(&self, id: u64) -> Option<View> {
+        self.items.lock().unwrap().get(&id).map(|it| Self::view_of(id, it))
+    }
+
+    fn view_of(id: u64, it: &Item) -> View {
+        let downloaded: u64 = it.segs.iter().map(|s| s.done.load(Relaxed)).sum();
+        let eta = match (it.total, it.speed > 1.0) {
+            (Some(t), true) => Some((t.saturating_sub(downloaded) as f64 / it.speed) as u64),
+            _ => None,
+        };
+        let (status, error) = match &it.status {
+            Status::Paused => ("paused", None),
+            Status::Downloading => ("downloading", None),
+            Status::Completed => ("completed", None),
+            Status::Error(e) => ("error", Some(e.clone())),
+        };
+        View {
+            id,
+            name: it.path.file_name().map(|n| n.to_string_lossy().into()).unwrap_or_default(),
+            url: it.url.clone(),
+            path: it.path.to_string_lossy().into(),
+            total: it.total,
+            downloaded,
+            speed: it.speed as u64,
+            eta,
+            status,
+            error,
+            resumable: it.resumable,
+            limit_kbps: it.limit.load(Relaxed),
+            segments: it
+                .segs
+                .iter()
+                .map(|s| SegView {
+                    done: s.done.load(Relaxed),
+                    total: if s.end == u64::MAX { None } else { Some(s.len()) },
+                    state: s.state.load(Relaxed),
+                })
+                .collect(),
+        }
     }
 
     pub async fn add(&self, url: String, dir: PathBuf, conns: u32) -> Result<u64, String> {
@@ -335,8 +406,7 @@ impl Manager {
         let it = self.items.lock().unwrap().remove(&id);
         if let Some(it) = it {
             it.cancel.store(true, Relaxed);
-            let incomplete = it.status != Status::Completed;
-            if delete_file || incomplete {
+            if delete_file {
                 let p = it.path;
                 tauri::async_runtime::spawn(async move {
                     sleep(Duration::from_millis(1500)).await; // let workers release the file (Windows)
@@ -355,12 +425,21 @@ impl Manager {
             it.cancel.store(false, Relaxed);
             (it.url.clone(), it.path.clone(), it.segs.clone(), it.cancel.clone(), it.limit.clone(), it.resumable)
         };
-        let n = segs.len() as u64;
+        let pacer = Arc::new(RateLimiter::new());
         let handles: Vec<_> = segs
             .iter()
             .filter(|s| s.state.load(Relaxed) != DONE)
             .map(|s| {
-                tokio::spawn(run_seg(self.client.clone(), url.clone(), path.clone(), s.clone(), ranged, cancel.clone(), limit.clone(), n))
+                tokio::spawn(run_seg(
+                    self.client.clone(),
+                    url.clone(),
+                    path.clone(),
+                    s.clone(),
+                    ranged,
+                    cancel.clone(),
+                    limit.clone(),
+                    pacer.clone(),
+                ))
             })
             .collect();
         let mut err = None;
@@ -391,11 +470,11 @@ impl Manager {
 #[allow(clippy::too_many_arguments)]
 async fn run_seg(
     client: reqwest::Client, url: String, path: PathBuf, seg: Arc<Seg>, ranged: bool,
-    cancel: Arc<AtomicBool>, limit: Arc<AtomicU64>, nseg: u64,
+    cancel: Arc<AtomicBool>, limit: Arc<AtomicU64>, pacer: Arc<RateLimiter>,
 ) -> Result<(), String> {
     let mut tries = 0u64;
     loop {
-        match attempt(&client, &url, &path, &seg, ranged, &cancel, &limit, nseg).await {
+        match attempt(&client, &url, &path, &seg, ranged, &cancel, &limit, &pacer).await {
             Ok(()) => return Ok(()),
             Err(e) => {
                 seg.state.store(WAITING, Relaxed);
@@ -415,7 +494,7 @@ async fn run_seg(
 #[allow(clippy::too_many_arguments)]
 async fn attempt(
     client: &reqwest::Client, url: &str, path: &Path, seg: &Seg, ranged: bool,
-    cancel: &AtomicBool, limit: &AtomicU64, nseg: u64,
+    cancel: &AtomicBool, limit: &AtomicU64, pacer: &RateLimiter,
 ) -> Result<(), String> {
     let from = seg.start + seg.done.load(Relaxed);
     if seg.end != u64::MAX && from > seg.end {
@@ -439,7 +518,7 @@ async fn attempt(
     let mut f = OpenOptions::new().write(true).open(path).await.map_err(|e| e.to_string())?;
     f.seek(SeekFrom::Start(from)).await.map_err(|e| e.to_string())?;
     let mut stream = resp.bytes_stream();
-    let (t0, mut got, mut stall) = (Instant::now(), 0u64, 0u32);
+    let mut stall = 0u32;
     loop {
         if cancel.load(Relaxed) {
             let _ = f.flush().await;
@@ -463,17 +542,13 @@ async fn attempt(
                         c.truncate(left as usize);
                     }
                 }
+                if !pacer.acquire(c.len(), limit, cancel).await {
+                    let _ = f.flush().await;
+                    seg.state.store(WAITING, Relaxed);
+                    return Ok(());
+                }
                 f.write_all(&c).await.map_err(|e| e.to_string())?;
                 seg.done.fetch_add(c.len() as u64, Relaxed);
-                got += c.len() as u64;
-                let k = limit.load(Relaxed);
-                if k > 0 {
-                    let rate = (k * 1024 / nseg).max(1) as f64;
-                    let ahead = got as f64 / rate - t0.elapsed().as_secs_f64();
-                    if ahead > 0.0 {
-                        sleep(Duration::from_secs_f64(ahead.min(1.0))).await;
-                    }
-                }
             }
         }
     }
@@ -516,4 +591,33 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
         .map(|n| dir.join(format!("{stem} ({n}){ext}")))
         .find(|p| !p.exists())
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn rate_limiter_caps_combined_connections() {
+        let limiter = Arc::new(RateLimiter::new());
+        let limit = Arc::new(AtomicU64::new(10));
+        let cancel = Arc::new(AtomicBool::new(false));
+        let started = Instant::now();
+
+        let workers: Vec<_> = (0..2)
+            .map(|_| {
+                let limiter = limiter.clone();
+                let limit = limit.clone();
+                let cancel = cancel.clone();
+                tokio::spawn(async move {
+                    limiter.acquire(1024, &limit, &cancel).await
+                })
+            })
+            .collect();
+
+        for worker in workers {
+            assert!(worker.await.unwrap());
+        }
+        assert!(started.elapsed() >= Duration::from_millis(150));
+    }
 }
