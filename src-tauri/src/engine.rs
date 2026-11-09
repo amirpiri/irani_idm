@@ -70,9 +70,9 @@ struct Saved {
     segs: Vec<SavedSeg>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct SegView { done: u64, total: Option<u64>, state: u8 }
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct View {
     id: u64,
     name: String,
@@ -308,7 +308,7 @@ impl Manager {
         );
         if ok {
             let m = self.clone();
-            tokio::spawn(async move { m.run(id).await });
+            tauri::async_runtime::spawn(async move { m.run(id).await });
         }
     }
     pub fn pause(&self, id: u64) {
@@ -338,7 +338,7 @@ impl Manager {
             let incomplete = it.status != Status::Completed;
             if delete_file || incomplete {
                 let p = it.path;
-                tokio::spawn(async move {
+                tauri::async_runtime::spawn(async move {
                     sleep(Duration::from_millis(1500)).await; // let workers release the file (Windows)
                     let _ = tokio::fs::remove_file(p).await;
                 });
