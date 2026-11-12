@@ -44,9 +44,14 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 ## Build with GitHub Actions (no local setup)
 1. Push this folder to a GitHub repository.
 2. Open the **Actions** tab, select **Build**, and click **Run workflow** (it also runs on every push to `main` and on pull requests).
-3. When it finishes, download the installers from the run's **Artifacts**
-   (`irani-idm-Windows`: .msi + .exe, `irani-idm-Linux`: .deb + .rpm + .AppImage).
-4. To publish a desktop release: `git tag v0.1.0 && git push origin v0.1.0` — the desktop installers are attached to a GitHub Release automatically.
+3. When it finishes, download the packages from the run's **Artifacts**
+   (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
+   `irani-idm-Linux`: .deb + .rpm + .AppImage).
+4. To publish a desktop release: `git tag v0.1.0 && git push origin v0.1.0` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
+
+The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
+without installing the app. Windows WebView2 Runtime is still required (it is
+preinstalled on most Windows 10/11 systems).
 
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.
 
