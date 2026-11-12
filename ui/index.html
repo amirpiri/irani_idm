@@ -45,6 +45,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .sg{max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px}
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+.fld.dir{justify-content:initial}.fld.dir input{min-width:0}
 #rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
 #rowMenu[hidden]{display:none}
 #rowMenu button{display:block;width:100%;padding:8px 12px;border:0;border-radius:5px;background:transparent;text-align:start;cursor:pointer}
@@ -89,7 +90,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
   <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
   <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
-  <div class="fld"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"></div>
+  <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
   <div class="acts"><button class="btn" onclick="dSet.close()" data-i="cancel"></button><button class="btn p" onclick="saveSet()" data-i="ok"></button></div>
 </dialog>
 
@@ -110,14 +111,14 @@ const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
 en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
- addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",
+ addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
 fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
- addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",
+ addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
  all:"همه دانلودها",compressed:"فایلهای فشرده",documents:"اسناد",music:"موسیقی",programs:"برنامه ها",video:"تصویری",images:"تصاویر",unfinished:"ناتمام",completed:"تکمیل شده",
  st_downloading:"در حال دریافت…",st_paused:"متوقف",st_completed:"کامل",st_error:"خطا",rx:"در حال دریافت…",done:"انجام شد",wait:"در انتظار",
@@ -208,6 +209,12 @@ async function doAdd(){
  for(const url of list){try{const id=await invoke("add_download",{url,dir:dir||null,connections:conns});await invoke("open_download_window",{id})}catch(e){alert(url+"\n"+e)}}
 }
 function openSet(){$("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;$("dSet").showModal()}
+async function browseDir(){
+ try{
+  const path=await window.__TAURI__.dialog.open({directory:true,multiple:false});
+  if(typeof path==="string")$("sDir").value=path;
+ }catch(e){alert(String(e))}
+}
 function saveSet(){lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
  localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;$("dSet").close();applyTheme();applyLang()}
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});

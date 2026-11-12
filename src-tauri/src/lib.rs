@@ -95,7 +95,7 @@ async fn open_download_window(
     let min_height = screen_height.min(480.0);
     let window_width = 820.0_f64.min((screen_width * 0.9).max(min_width));
     let max_height = (screen_height * 0.9).max(min_height);
-    let content_height: f64 = 430.0 + download.segment_count() as f64 * 32.0;
+    let content_height: f64 = 560.0 + download.segment_count() as f64 * 32.0;
     let window_height = content_height.clamp(min_height, max_height);
     let title = format!("{} - Irani IDM", download.name);
     let window_app = app.clone();
@@ -150,9 +150,9 @@ fn default_dir() -> String {
         .unwrap_or_default()
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             if let Some(config_dir) = dirs::config_dir() {
