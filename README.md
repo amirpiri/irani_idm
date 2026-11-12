@@ -5,6 +5,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 
 ## Features
 - Multi-segment downloads (default 8 connections, up to 32) with HTTP Range
+- Add downloads immediately while metadata is prepared in the background; probes get up to 15 seconds before falling back to a single-connection download
 - Pause / resume (also after restarting the app), auto-retry, stall timeout
 - Per-download speed limit, live speed / ETA, active connections and speed in the download list
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
@@ -49,7 +50,7 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 3. When it finishes, download the packages from the run's **Artifacts**
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
    `irani-idm-Linux`: .deb + .rpm + .AppImage).
-4. To publish a desktop release: `git tag v0.1.0 && git push origin v0.1.0` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
+4. To publish a desktop release: `git tag v1.0.0 && git push origin v1.0.0` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is

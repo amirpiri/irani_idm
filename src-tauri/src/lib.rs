@@ -22,7 +22,7 @@ fn migrate_download_history(old_data_dir: &Path, new_data_dir: &Path) -> std::io
 }
 
 #[tauri::command]
-async fn add_download(
+fn add_download(
     m: State<'_, Manager>,
     url: String,
     dir: Option<String>,
@@ -33,7 +33,7 @@ async fn add_download(
         .map(PathBuf::from)
         .or_else(downloads_dir)
         .ok_or("no download directory")?;
-    m.add(url, dir, connections.unwrap_or(8)).await
+    m.add(url, dir, connections.unwrap_or(8))
 }
 
 #[tauri::command]

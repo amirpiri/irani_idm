@@ -21,6 +21,7 @@ use tokio::{
 const WAITING: u8 = 0;
 const RECV: u8 = 1;
 const DONE: u8 = 2;
+const PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct Seg {
     start: u64,
@@ -36,6 +37,7 @@ impl Seg {
 
 #[derive(Clone, PartialEq)]
 enum Status {
+    Preparing,
     Paused,
     Downloading,
     Completed,
@@ -47,7 +49,10 @@ struct Item {
     path: PathBuf,
     total: Option<u64>,
     resumable: bool,
+    file_created: bool,
     status: Status,
+    connections: u32,
+    metadata_pending: bool,
     removing: bool,
     segs: Vec<Arc<Seg>>,
     cancel: Arc<AtomicBool>,
@@ -121,10 +126,24 @@ struct Saved {
     path: PathBuf,
     total: Option<u64>,
     resumable: bool,
+    #[serde(default = "default_file_created")]
+    file_created: bool,
+    #[serde(default = "default_connections")]
+    connections: u32,
+    #[serde(default)]
+    metadata_pending: bool,
     completed: bool,
     error: Option<String>,
     limit_kbps: u64,
     segs: Vec<SavedSeg>,
+}
+
+fn default_connections() -> u32 {
+    8
+}
+
+fn default_file_created() -> bool {
+    true
 }
 
 #[derive(Serialize, Clone)]
@@ -196,7 +215,9 @@ impl Manager {
             map.insert(
                 s.id,
                 Item {
-                    url: s.url, path: s.path, total: s.total, resumable: s.resumable, status, segs,
+                    url: s.url, path: s.path, total: s.total, resumable: s.resumable, status,
+                    file_created: s.file_created,
+                    connections: s.connections.clamp(1, 32), metadata_pending: s.metadata_pending, segs,
                     removing: false,
                     cancel: Arc::new(AtomicBool::new(false)),
                     limit: Arc::new(AtomicU64::new(s.limit_kbps)),
@@ -229,6 +250,9 @@ impl Manager {
                 path: it.path.clone(),
                 total: it.total,
                 resumable: it.resumable,
+                file_created: it.file_created,
+                connections: it.connections,
+                metadata_pending: it.metadata_pending,
                 completed: it.status == Status::Completed,
                 error: if let Status::Error(e) = &it.status { Some(e.clone()) } else { None },
                 limit_kbps: it.limit.load(Relaxed),
@@ -268,6 +292,7 @@ impl Manager {
             _ => None,
         };
         let (status, error) = match &it.status {
+            Status::Preparing => ("preparing", None),
             Status::Paused => ("paused", None),
             Status::Downloading => ("downloading", None),
             Status::Completed => ("completed", None),
@@ -298,52 +323,221 @@ impl Manager {
         }
     }
 
-    pub async fn add(&self, url: String, dir: PathBuf, conns: u32) -> Result<u64, String> {
+    pub fn add(&self, url: String, dir: PathBuf, conns: u32) -> Result<u64, String> {
         let parsed = url::Url::parse(url.trim()).map_err(|e| e.to_string())?;
         if !matches!(parsed.scheme(), "http" | "https") {
             return Err("only http/https supported".into());
         }
-        let (total, ranged, name) = self.probe(&parsed).await?;
-        tokio::fs::create_dir_all(&dir).await.map_err(|e| e.to_string())?;
-        let path = unique_path(&dir, &sanitize(&name));
-        let segs: Vec<Arc<Seg>> = match (total, ranged) {
-            (Some(t), true) if t > 0 => {
-                let n = (conns.clamp(1, 32) as u64).min((t / (256 * 1024)).max(1));
-                let size = t.div_ceil(n);
-                (0..n)
-                    .map(|i| {
-                        let start = i * size;
-                        let end = ((i + 1) * size - 1).min(t - 1);
-                        Arc::new(Seg { start, end, done: AtomicU64::new(0), state: AtomicU8::new(WAITING) })
-                    })
-                    .collect()
-            }
-            _ => vec![Arc::new(Seg {
-                start: 0,
-                end: total.filter(|t| *t > 0).map(|t| t - 1).unwrap_or(u64::MAX),
-                done: AtomicU64::new(0),
-                state: AtomicU8::new(WAITING),
-            })],
-        };
-        // pre-allocate
-        let f = tokio::fs::File::create(&path).await.map_err(|e| e.to_string())?;
-        if let Some(t) = total {
-            f.set_len(t).await.map_err(|e| e.to_string())?;
-        }
-        drop(f);
+        let url = parsed.to_string();
+        let name = url_name(&parsed);
+        let connections = conns.clamp(1, 32);
         let id = self.next_id.fetch_add(1, Relaxed);
-        self.items.lock().unwrap().insert(
-            id,
-            Item {
-                url: parsed.to_string(), path, total, resumable: ranged, status: Status::Paused, segs,
-                removing: false,
-                cancel: Arc::new(AtomicBool::new(false)),
-                limit: Arc::new(AtomicU64::new(0)),
-                speed: 0.0, last: 0,
-            },
-        );
-        self.resume(id);
+        {
+            let mut items = self.items.lock().unwrap();
+            if items.values().any(|item| item.url == url && item.status == Status::Preparing) {
+                return Err("This URL is already being prepared".into());
+            }
+            items.insert(
+                id,
+                Item {
+                    url,
+                    path: dir.join(name),
+                    total: None,
+                    resumable: false,
+                    file_created: false,
+                    status: Status::Preparing,
+                    connections,
+                    metadata_pending: false,
+                    removing: false,
+                    segs: Vec::new(),
+                    cancel: Arc::new(AtomicBool::new(false)),
+                    limit: Arc::new(AtomicU64::new(0)),
+                    speed: 0.0,
+                    last: 0,
+                },
+            );
+        }
+        self.save();
+        let manager = self.clone();
+        tauri::async_runtime::spawn(async move { manager.prepare(id).await });
         Ok(id)
+    }
+
+    async fn prepare(&self, id: u64) {
+        let (url, dir, connections, cancel) = {
+            let items = self.items.lock().unwrap();
+            let Some(item) = items.get(&id) else { return };
+            if item.removing || item.status != Status::Preparing {
+                return;
+            }
+            (
+                item.url.clone(),
+                item.path.parent().unwrap_or(Path::new(".")).to_path_buf(),
+                item.connections,
+                item.cancel.clone(),
+            )
+        };
+        if let Err(error) = tokio::fs::create_dir_all(&dir).await {
+            self.fail_preparation(id, error.to_string());
+            return;
+        }
+        let parsed = match url::Url::parse(&url) {
+            Ok(url) => url,
+            Err(error) => {
+                self.fail_preparation(id, error.to_string());
+                return;
+            }
+        };
+        let result = tokio::select! {
+            _ = wait_for_cancel(&cancel) => {
+                self.finish_cancelled_preparation(id);
+                return;
+            },
+            result = tokio::time::timeout(PROBE_TIMEOUT, self.probe(&parsed)) => result,
+        };
+        match result {
+            Ok(Ok((total, ranged, name))) => {
+                self.finish_preparation(id, total, ranged, name, connections).await;
+            }
+            Ok(Err(error)) => self.fail_preparation(id, error),
+            Err(_) => self.start_single_connection_fallback(id).await,
+        }
+    }
+
+    async fn finish_preparation(
+        &self,
+        id: u64,
+        total: Option<u64>,
+        ranged: bool,
+        name: String,
+        connections: u32,
+    ) {
+        let dir = {
+            let items = self.items.lock().unwrap();
+            let Some(item) = items.get(&id) else { return };
+            if item.removing || item.cancel.load(Relaxed) {
+                None
+            } else {
+                Some(item.path.parent().unwrap_or(Path::new(".")).to_path_buf())
+            }
+        };
+        let Some(dir) = dir else {
+            self.finish_cancelled_preparation(id);
+            return;
+        };
+        let path = match create_download_file(&dir, &sanitize(&name), total) {
+            Ok(path) => path,
+            Err(error) => {
+                self.fail_preparation(id, error);
+                return;
+            }
+        };
+        let segs = make_segments(total, ranged, connections);
+        let mut cancelled = false;
+        {
+            let mut items = self.items.lock().unwrap();
+            let Some(item) = items.get_mut(&id) else {
+                let _ = std::fs::remove_file(path);
+                return;
+            };
+            if item.removing || item.cancel.load(Relaxed) {
+                let _ = std::fs::remove_file(path);
+                cancelled = true;
+                if !item.removing {
+                    item.status = Status::Paused;
+                }
+            } else {
+                item.path = path;
+                item.total = total;
+                item.resumable = ranged;
+                item.file_created = true;
+                item.metadata_pending = false;
+                item.segs = segs;
+                item.status = Status::Paused;
+            }
+        }
+        if cancelled {
+            self.save();
+            return;
+        }
+        self.save();
+        self.resume(id);
+    }
+
+    async fn start_single_connection_fallback(&self, id: u64) {
+        let (dir, url, connections) = {
+            let items = self.items.lock().unwrap();
+            let Some(item) = items.get(&id) else { return };
+            if item.removing || item.cancel.load(Relaxed) {
+                (None, String::new(), 0)
+            } else {
+                (
+                    Some(item.path.parent().unwrap_or(Path::new(".")).to_path_buf()),
+                    item.url.clone(),
+                    item.connections,
+                )
+            }
+        };
+        let Some(dir) = dir else {
+            self.finish_cancelled_preparation(id);
+            return;
+        };
+        let name = match url::Url::parse(&url) {
+            Ok(url) => url_name(&url),
+            Err(error) => {
+                self.fail_preparation(id, error.to_string());
+                return;
+            }
+        };
+        let path = match tokio::fs::create_dir_all(&dir).await {
+            Ok(()) => dir.join(name),
+            Err(error) => {
+                self.fail_preparation(id, error.to_string());
+                return;
+            }
+        };
+        let mut cancelled = false;
+        {
+            let mut items = self.items.lock().unwrap();
+            let Some(item) = items.get_mut(&id) else { return };
+            if item.removing || item.cancel.load(Relaxed) {
+                cancelled = true;
+                if !item.removing {
+                    item.status = Status::Paused;
+                }
+            } else {
+                item.path = path;
+                item.total = None;
+                item.resumable = false;
+                item.metadata_pending = true;
+                item.segs = make_segments(None, false, connections);
+                item.status = Status::Paused;
+            }
+        }
+        if cancelled {
+            self.save();
+            return;
+        }
+        self.save();
+        self.resume(id);
+    }
+
+    fn fail_preparation(&self, id: u64, error: String) {
+        if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
+            if !item.removing {
+                item.status = Status::Error(error);
+            }
+        }
+        self.save();
+    }
+
+    fn finish_cancelled_preparation(&self, id: u64) {
+        if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
+            if !item.removing {
+                item.status = Status::Paused;
+            }
+        }
+        self.save();
     }
 
     async fn probe(&self, u: &url::Url) -> Result<(Option<u64>, bool, String), String> {
@@ -363,26 +557,65 @@ impl Manager {
         } else {
             (r.content_length(), false)
         };
-        let name = h
-            .get("content-disposition")
-            .and_then(|v| v.to_str().ok())
-            .and_then(disp_name)
-            .or_else(|| {
-                let last = r.url().path_segments()?.last()?.to_string();
-                (!last.is_empty()).then(|| percent_decode_str(&last).decode_utf8_lossy().into_owned())
-            })
-            .unwrap_or_else(|| "download".into());
+        let name = response_name(r.headers(), r.url());
         Ok((total, ranged, name))
     }
 
+    async fn finalize_fallback(
+        &self,
+        id: u64,
+        response: &reqwest::Response,
+    ) -> Result<PathBuf, String> {
+        let (old_path, pending) = {
+            let items = self.items.lock().unwrap();
+            let item = items.get(&id).ok_or("Download not found")?;
+            (item.path.clone(), item.metadata_pending)
+        };
+        if !pending {
+            return Ok(old_path);
+        }
+        let dir = old_path.parent().unwrap_or(Path::new("."));
+        let name = sanitize(&response_name(response.headers(), response.url()));
+        let path = create_download_file(dir, &name, response.content_length())?;
+        let mut items = self.items.lock().unwrap();
+        let Some(item) = items.get_mut(&id) else {
+            let _ = std::fs::remove_file(&path);
+            return Err("Download not found".into());
+        };
+        if item.removing {
+            let _ = std::fs::remove_file(&path);
+            return Err("Download is being removed".into());
+        }
+        item.path = path.clone();
+        item.total = response.content_length();
+        item.file_created = true;
+        item.metadata_pending = false;
+        drop(items);
+        self.save();
+        Ok(path)
+    }
+
     pub fn resume(&self, id: u64) {
-        let ok = self.items.lock().unwrap().get(&id).is_some_and(|item| {
-            !item.removing
-                && matches!(item.status, Status::Paused | Status::Error(_))
-        });
-        if ok {
-            let m = self.clone();
-            tauri::async_runtime::spawn(async move { m.run(id).await });
+        let prepare = {
+            let mut items = self.items.lock().unwrap();
+            let Some(item) = items.get_mut(&id) else { return };
+            if item.removing || !matches!(item.status, Status::Paused | Status::Error(_)) {
+                return;
+            }
+            item.cancel.store(false, Relaxed);
+            if item.segs.is_empty() {
+                item.status = Status::Preparing;
+                true
+            } else {
+                false
+            }
+        };
+        let manager = self.clone();
+        if prepare {
+            self.save();
+            tauri::async_runtime::spawn(async move { manager.prepare(id).await });
+        } else {
+            tauri::async_runtime::spawn(async move { manager.run(id).await });
         }
     }
     pub fn pause(&self, id: u64) {
@@ -404,6 +637,13 @@ impl Manager {
     }
     pub fn path_of(&self, id: u64) -> Option<PathBuf> {
         self.items.lock().unwrap().get(&id).map(|i| i.path.clone())
+    }
+    fn is_metadata_pending(&self, id: u64) -> bool {
+        self.items
+            .lock()
+            .unwrap()
+            .get(&id)
+            .is_some_and(|item| item.metadata_pending)
     }
     pub async fn remove(&self, id: u64, delete_file: bool) -> Result<(), String> {
         {
@@ -430,31 +670,37 @@ impl Manager {
         }
 
         if delete_file {
-            let path = self.items.lock().unwrap().get(&id).ok_or("Download not found")?.path.clone();
-            let mut last_error = None;
-            for attempt in 0..10 {
-                match tokio::fs::remove_file(&path).await {
-                    Ok(()) => {
-                        last_error = None;
-                        break;
-                    }
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                        last_error = None;
-                        break;
-                    }
-                    Err(error) => {
-                        last_error = Some(error);
-                        if attempt < 9 {
-                            sleep(Duration::from_millis(100)).await;
+            let (path, file_created) = {
+                let items = self.items.lock().unwrap();
+                let item = items.get(&id).ok_or("Download not found")?;
+                (item.path.clone(), item.file_created)
+            };
+            if file_created {
+                let mut last_error = None;
+                for attempt in 0..10 {
+                    match tokio::fs::remove_file(&path).await {
+                        Ok(()) => {
+                            last_error = None;
+                            break;
+                        }
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                            last_error = None;
+                            break;
+                        }
+                        Err(error) => {
+                            last_error = Some(error);
+                            if attempt < 9 {
+                                sleep(Duration::from_millis(100)).await;
+                            }
                         }
                     }
                 }
-            }
-            if let Some(error) = last_error {
-                if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
-                    item.removing = false;
+                if let Some(error) = last_error {
+                    if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
+                        item.removing = false;
+                    }
+                    return Err(format!("Could not delete downloaded file: {error}"));
                 }
-                return Err(format!("Could not delete downloaded file: {error}"));
             }
         }
 
@@ -485,6 +731,8 @@ impl Manager {
                     path.clone(),
                     s.clone(),
                     ranged,
+                    self.clone(),
+                    id,
                     cancel.clone(),
                     limit.clone(),
                     pacer.clone(),
@@ -516,14 +764,120 @@ impl Manager {
     }
 }
 
+fn make_segments(total: Option<u64>, ranged: bool, connections: u32) -> Vec<Arc<Seg>> {
+    match (total, ranged) {
+        (Some(total), true) if total > 0 => {
+            let count = (connections.clamp(1, 32) as u64).min((total / (256 * 1024)).max(1));
+            let size = total.div_ceil(count);
+            (0..count)
+                .map(|index| {
+                    let start = index * size;
+                    let end = ((index + 1) * size - 1).min(total - 1);
+                    Arc::new(Seg {
+                        start,
+                        end,
+                        done: AtomicU64::new(0),
+                        state: AtomicU8::new(WAITING),
+                    })
+                })
+                .collect()
+        }
+        _ => vec![Arc::new(Seg {
+            start: 0,
+            end: if ranged {
+                total.filter(|size| *size > 0).map(|size| size - 1).unwrap_or(u64::MAX)
+            } else {
+                u64::MAX
+            },
+            done: AtomicU64::new(0),
+            state: AtomicU8::new(WAITING),
+        })],
+    }
+}
+
+#[cfg(test)]
+mod segment_tests {
+    use super::*;
+
+    #[test]
+    fn ranged_download_uses_requested_connections_for_large_files() {
+        let total = 8 * 1024 * 1024;
+        let segments = make_segments(Some(total), true, 8);
+
+        assert_eq!(segments.len(), 8);
+        assert_eq!(segments.iter().map(|segment| segment.len()).sum::<u64>(), total);
+    }
+
+    #[test]
+    fn non_ranged_download_uses_one_connection() {
+        assert_eq!(make_segments(Some(8 * 1024 * 1024), false, 8).len(), 1);
+    }
+}
+
+fn create_download_file(dir: &Path, name: &str, total: Option<u64>) -> Result<PathBuf, String> {
+    let (stem, extension) = match name.rfind('.') {
+        Some(index) if index > 0 => (&name[..index], &name[index..]),
+        _ => (name, ""),
+    };
+    for suffix in 0u64.. {
+        let filename = if suffix == 0 {
+            name.to_string()
+        } else {
+            format!("{stem} ({suffix}){extension}")
+        };
+        let path = dir.join(filename);
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(file) => {
+                if let Some(total) = total {
+                    if let Err(error) = file.set_len(total) {
+                        drop(file);
+                        let _ = std::fs::remove_file(&path);
+                        return Err(error.to_string());
+                    }
+                }
+                return Ok(path);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    Err("Could not choose a unique file name".into())
+}
+
+fn url_name(url: &url::Url) -> String {
+    url.path_segments()
+        .and_then(Iterator::last)
+        .filter(|name| !name.is_empty())
+        .map(|name| percent_decode_str(name).decode_utf8_lossy().into_owned())
+        .map(|name| sanitize(&name))
+        .unwrap_or_else(|| "download".into())
+}
+
+fn response_name(headers: &reqwest::header::HeaderMap, url: &url::Url) -> String {
+    headers
+        .get("content-disposition")
+        .and_then(|value| value.to_str().ok())
+        .and_then(disp_name)
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| url_name(url))
+}
+
+async fn wait_for_cancel(cancel: &AtomicBool) {
+    while !cancel.load(Relaxed) {
+        sleep(Duration::from_millis(50)).await;
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn run_seg(
     client: reqwest::Client, url: String, path: PathBuf, seg: Arc<Seg>, ranged: bool,
+    manager: Manager, id: u64,
     cancel: Arc<AtomicBool>, limit: Arc<AtomicU64>, pacer: Arc<RateLimiter>,
 ) -> Result<(), String> {
     let mut tries = 0u64;
     loop {
-        match attempt(&client, &url, &path, &seg, ranged, &cancel, &limit, &pacer).await {
+        let path = manager.path_of(id).unwrap_or_else(|| path.clone());
+        match attempt(&client, &url, &path, &seg, ranged, &manager, id, &cancel, &limit, &pacer).await {
             Ok(()) => return Ok(()),
             Err(e) => {
                 seg.state.store(WAITING, Relaxed);
@@ -550,12 +904,20 @@ async fn run_seg(
 #[allow(clippy::too_many_arguments)]
 async fn attempt(
     client: &reqwest::Client, url: &str, path: &Path, seg: &Seg, ranged: bool,
+    manager: &Manager, id: u64,
     cancel: &AtomicBool, limit: &AtomicU64, pacer: &RateLimiter,
 ) -> Result<(), String> {
-    let from = seg.start + seg.done.load(Relaxed);
+    let mut from = seg.start + seg.done.load(Relaxed);
     if seg.end != u64::MAX && from > seg.end {
         seg.state.store(DONE, Relaxed);
         return Ok(());
+    }
+    if !ranged && from > 0 {
+        seg.done.store(0, Relaxed);
+        from = 0;
+        if !manager.is_metadata_pending(id) {
+            tokio::fs::File::create(path).await.map_err(|e| e.to_string())?;
+        }
     }
     seg.state.store(RECV, Relaxed);
     let mut req = client.get(url);
@@ -563,7 +925,13 @@ async fn attempt(
         let to = if seg.end == u64::MAX { String::new() } else { seg.end.to_string() };
         req = req.header("Range", format!("bytes={from}-{to}"));
     }
-    let resp = req.send().await.map_err(|e| e.to_string())?;
+    let resp = tokio::select! {
+        _ = wait_for_cancel(cancel) => {
+            seg.state.store(WAITING, Relaxed);
+            return Ok(());
+        }
+        result = req.send() => result.map_err(|e| e.to_string())?,
+    };
     let st = resp.status();
     if ranged && st.as_u16() != 206 {
         return Err(format!("HTTP {st} (range not honoured)"));
@@ -571,6 +939,7 @@ async fn attempt(
     if !st.is_success() {
         return Err(format!("HTTP {st}"));
     }
+    let path = manager.finalize_fallback(id, &resp).await?;
     let mut f = OpenOptions::new().write(true).open(path).await.map_err(|e| e.to_string())?;
     f.seek(SeekFrom::Start(from)).await.map_err(|e| e.to_string())?;
     let mut stream = resp.bytes_stream();
@@ -634,21 +1003,6 @@ fn sanitize(n: &str) -> String {
     if s.is_empty() { "download".into() } else { s }
 }
 
-fn unique_path(dir: &Path, name: &str) -> PathBuf {
-    let p = dir.join(name);
-    if !p.exists() {
-        return p;
-    }
-    let (stem, ext) = match name.rfind('.') {
-        Some(i) if i > 0 => (&name[..i], &name[i..]),
-        _ => (name, ""),
-    };
-    (1..)
-        .map(|n| dir.join(format!("{stem} ({n}){ext}")))
-        .find(|p| !p.exists())
-        .unwrap()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -674,7 +1028,10 @@ mod tests {
                 path: path.clone(),
                 total: Some(8),
                 resumable: true,
+                file_created: true,
                 status: Status::Paused,
+                connections: 8,
+                metadata_pending: false,
                 removing: false,
                 segs: Vec::new(),
                 cancel: Arc::new(AtomicBool::new(false)),
@@ -683,6 +1040,7 @@ mod tests {
                 last: 0,
             },
         );
+        manager.next_id.store(id + 1, Relaxed);
         (manager, path, id)
     }
 
@@ -720,6 +1078,58 @@ mod tests {
         assert!(manager.view(id).is_some());
         manager.remove(id, false).await.unwrap();
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn add_returns_while_metadata_probe_is_pending() {
+        let (manager, path, original_id) = manager_with_download();
+        let unrelated_file = path.parent().unwrap().join("slow.bin");
+        std::fs::write(&unrelated_file, b"preserve").unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (_stream, _) = listener.accept().await.unwrap();
+            std::future::pending::<()>().await;
+        });
+
+        let started = Instant::now();
+        let id = manager
+            .add(
+                format!("http://{address}/slow.bin"),
+                path.parent().unwrap().to_path_buf(),
+                8,
+            )
+            .unwrap();
+
+        assert!(started.elapsed() < Duration::from_secs(1));
+        assert_eq!(manager.view(id).unwrap().status, "preparing");
+        manager.remove(id, true).await.unwrap();
+        assert_eq!(std::fs::read(&unrelated_file).unwrap(), b"preserve");
+        server.abort();
+        manager.remove(original_id, false).await.unwrap();
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn file_creation_does_not_overwrite_existing_downloads() {
+        let dir = std::env::temp_dir().join(format!(
+            "irani-idm-file-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let original = dir.join("file.bin");
+        std::fs::write(&original, b"keep").unwrap();
+
+        let created = create_download_file(&dir, "file.bin", Some(2)).unwrap();
+
+        assert_eq!(std::fs::read(&original).unwrap(), b"keep");
+        assert_eq!(created.file_name().unwrap(), "file (1).bin");
+        assert_eq!(std::fs::metadata(created).unwrap().len(), 2);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[tokio::test]
