@@ -12,6 +12,8 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Category groups, search, queue start/stop all
 - Day, night, and system appearance modes
 - English + Persian UI (switch in Settings; RTL layout applied automatically)
+- Adjustable interface scale and font size
+- Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
 
 ## Prerequisites
 - Rust (stable): https://rustup.rs
@@ -57,4 +59,4 @@ Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Rep
 
 ## Ideas for next steps
 Scheduler, browser extension / clipboard capture, download queue concurrency limit,
-proxy + auth settings, YouTube/HLS support, system tray, bundling the Vazirmatn font.
+proxy + auth settings, YouTube/HLS support, system tray.

@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Irani IDM</title>
 <style>
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-SemiBold.woff2") format("woff2");font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
 :root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466;--ok:#22a45d;--er:#e45555}
+:root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{font:14px "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;user-select:none}
+body{zoom:var(--app-scale);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;user-select:none}
 button,input,select,textarea{font:inherit;color:inherit}
 #bar{display:flex;gap:2px;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--bd);flex-wrap:wrap}
 .tb{background:none;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
-.tb:hover{background:var(--bg)}.tb i{font-style:normal;font-size:22px}.tb span{font-size:12px}
+.tb:hover{background:var(--bg)}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
 .sep{width:1px;background:var(--bd);margin:4px 6px}
 #main{flex:1;display:flex;min-height:0}
 #side{width:200px;background:var(--card);border-inline-start:1px solid var(--bd);padding:8px;overflow:auto;order:2}
@@ -32,12 +36,12 @@ tr.r{cursor:default}tr.r.sel{background:var(--sel)}
 td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
-.pb b{position:absolute;inset:0;text-align:center;font-size:11px;line-height:16px}
+.pb b{position:absolute;inset:0;text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw)}
 dialog::backdrop{background:#0006}
 dialog h3{margin:0 0 10px}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}.row span:first-child{color:var(--mut)}
-.url{direction:ltr;text-align:start;word-break:break-all;font-size:12px;user-select:text;margin-bottom:8px}
+.url{direction:ltr;text-align:start;word-break:break-all;font-size:calc(var(--app-font-size)*.857);user-select:text;margin-bottom:8px}
 textarea{width:100%;height:110px;direction:ltr;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
 input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
@@ -46,7 +50,9 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
 .fld.dir{justify-content:initial}.fld.dir input{min-width:0}
-#rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
+.fld.range input[type=range]{flex:1;min-width:100px;padding:0;accent-color:var(--ac)}
+.fld.range output{min-width:48px;text-align:end;color:var(--mut);direction:ltr}
+#rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);color:var(--tx);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
 #rowMenu[hidden]{display:none}
 #rowMenu button{display:block;width:100%;padding:8px 12px;border:0;border-radius:5px;background:transparent;text-align:start;cursor:pointer}
 #rowMenu button:hover:not(:disabled){background:var(--bg)}
@@ -56,16 +62,16 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 </head>
 <body>
 <div id="bar">
-  <button class="tb" onclick="openAdd()"><i>➕</i><span data-i="add"></span></button>
-  <button class="tb" onclick="resumeSelected()"><i>▶️</i><span data-i="resume"></span></button>
-  <button class="tb" onclick="act('pause')"><i>⏹️</i><span data-i="stop"></span></button>
-  <button class="tb" onclick="invoke('pause_all')"><i>✋</i><span data-i="stopAll"></span></button>
+  <button class="tb" onclick="openAdd()"><svg aria-hidden="true" viewBox="0 0 24 24"><circle class="icon-bg" cx="12" cy="12" r="10" fill="#e7f1ff"/><path d="M12 6v12M6 12h12" stroke="#2475d2" stroke-width="2.4"/></svg><span data-i="add"></span></button>
+  <button class="tb" onclick="resumeSelected()"><svg aria-hidden="true" viewBox="0 0 24 24"><circle class="icon-bg" cx="12" cy="12" r="10" fill="#e3f7eb"/><path class="icon-solid" d="m9 6 10 6-10 6z" fill="#219653"/></svg><span data-i="resume"></span></button>
+  <button class="tb" onclick="act('pause')"><svg aria-hidden="true" viewBox="0 0 24 24"><rect class="icon-bg" x="2" y="2" width="20" height="20" rx="6" fill="#fff0ed"/><path d="M8 8v8m8-8v8" stroke="#dc5145" stroke-width="2.5"/></svg><span data-i="stop"></span></button>
+  <button class="tb" onclick="invoke('pause_all')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle class="icon-bg" cx="12" cy="12" r="10" fill="#f1eaff"/><path d="M8 8v8m8-8v8" stroke="#8054c7" stroke-width="2.5"/></svg><span data-i="stopAll"></span></button>
   <div class="sep"></div>
-  <button class="tb" onclick="del()"><i>🗑️</i><span data-i="del"></span></button>
-  <button class="tb" onclick="delDone()"><i>🧹</i><span data-i="delDone"></span></button>
+  <button class="tb" onclick="del()"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="M5 7h14l-1 13H6z" fill="#ffe1df"/><path d="M3.5 6h17M9 6V4h6v2m-5 4v7m4-7v7" stroke="#d64b48"/></svg><span data-i="del"></span></button>
+  <button class="tb" onclick="delDone()"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="m5 7 1.5 13h11L19 7z" fill="#e2f5e8"/><path d="M3.5 6h17M9 6V4h6v2" stroke="#338c55"/><path d="m9 13 2 2 4-4" stroke="#338c55" stroke-width="2.2"/></svg><span data-i="delDone"></span></button>
   <div class="sep"></div>
-  <button class="tb" onclick="openSet()"><i>⚙️</i><span data-i="settings"></span></button>
-  <button class="tb" onclick="invoke('resume_all')"><i>📥</i><span data-i="startQ"></span></button>
+  <button class="tb" onclick="openSet()"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="m9.7 2.8 4.6 0 .6 2.1 1.7 1 2.1-.6 2.3 4-1.5 1.6v2l1.5 1.7-2.3 4-2.1-.7-1.7 1-.6 2.1H9.7L9 18.9l-1.7-1-2.1.7-2.3-4 1.5-1.7v-2L2.9 9.3l2.3-4 2.1.6 1.7-1z" fill="#e7edfa"/><circle cx="12" cy="12" r="3.3" fill="#fff" stroke="#6579a8"/></svg><span data-i="settings"></span></button>
+  <button class="tb" onclick="invoke('resume_all')"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="M4 15h16l-1 6H5z" fill="#dceeff"/><path d="M12 2v12m-5-5 5 5 5-5m-2 2 2 3" stroke="#2378c8" stroke-width="2"/><path d="M4 15h16" stroke="#2378c8"/></svg><span data-i="startQ"></span></button>
 </div>
 <div id="main">
   <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
@@ -89,9 +95,20 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <dialog id="dSet"><h3 data-i="settings"></h3>
   <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
   <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
+  <div class="fld range"><label for="sScale" data-i="uiScale"></label><input id="sScale" type="range" min="80" max="120" step="5"><output id="sScaleValue" for="sScale"></output></div>
+  <div class="fld range"><label for="sFontSize" data-i="fontSize"></label><input id="sFontSize" type="range" min="12" max="18" step="1"><output id="sFontSizeValue" for="sFontSize"></output></div>
   <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
   <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
   <div class="acts"><button class="btn" onclick="dSet.close()" data-i="cancel"></button><button class="btn p" onclick="saveSet()" data-i="ok"></button></div>
+</dialog>
+
+<dialog id="dDelete"><h3 data-i="deleteTitle"></h3>
+  <div data-i="deleteHint" style="color:var(--mut);margin-bottom:6px"></div>
+  <div class="acts">
+    <button class="btn" onclick="dDelete.close()" data-i="cancel"></button>
+    <button class="btn" onclick="removeSelected(false)" data-i="removeOnly"></button>
+    <button class="btn p" onclick="removeSelected(true)" data-i="deleteFile"></button>
+  </div>
 </dialog>
 
 <div id="rowMenu" role="menu" aria-label="Download actions" hidden>
@@ -109,14 +126,14 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -128,8 +145,19 @@ const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
 let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
 let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="";
+const readDisplaySetting=(key,min,max,fallback)=>{
+ const stored=localStorage.getItem(key);
+ if(stored===null)return fallback;
+ const value=Number(stored);
+ return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;
+};
+let appScale=readDisplaySetting("appScale",80,120,100), appFontSize=readDisplaySetting("appFontSize",12,18,14);
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
 const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
+function applyDisplaySettings(){
+ document.documentElement.style.setProperty("--app-scale",String(appScale/100));
+ document.documentElement.style.setProperty("--app-font-size",appFontSize+"px");
+}
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
  document.documentElement.dataset.theme=theme;
@@ -137,6 +165,9 @@ function applyTheme(){
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
 window.addEventListener("storage",event=>{
  if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
+ if(event.key==="appScale"||event.key==="appFontSize"){
+  appScale=readDisplaySetting("appScale",80,120,100);appFontSize=readDisplaySetting("appFontSize",12,18,14);applyDisplaySettings();
+ }
 });
 const nf=(n,d=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:d}).format(n);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -185,8 +216,21 @@ async function resumeDownload(id){
 }
 const resumeSelected=()=>{if(sel!=null)resumeDownload(sel)};
 const act=c=>sel!=null&&invoke(c,{id:sel});
-function del(){if(sel==null)return;invoke("remove",{id:sel,deleteFile:confirm(t("delFile"))});sel=null}
-function delDone(){data.filter(d=>d.status==="completed").forEach(d=>invoke("remove",{id:d.id,deleteFile:false}))}
+async function del(){
+ if(sel==null)return;
+ $("dDelete").showModal();
+}
+async function removeSelected(deleteFile){
+ if(sel==null)return;
+ const id=sel;
+ $("dDelete").close();
+ try{await invoke("remove",{id,deleteFile});if(sel===id)sel=null;render()}
+ catch(error){alert(String(error))}
+}
+async function delDone(){
+ try{await Promise.all(data.filter(d=>d.status==="completed").map(d=>invoke("remove",{id:d.id,deleteFile:false})))}
+ catch(error){alert(String(error))}
+}
 async function runRowAction(action,id){
  const d=data.find(x=>x.id===id);if(!d)return;
  try{
@@ -206,9 +250,20 @@ async function runRowAction(action,id){
 async function openAdd(){$("urls").value="";try{const c=(await navigator.clipboard.readText()).trim();if(/^https?:\/\//i.test(c))$("urls").value=c}catch{}$("dAdd").showModal()}
 async function doAdd(){
  const list=$("urls").value.split(/\s+/).filter(Boolean);$("dAdd").close();
- for(const url of list){try{const id=await invoke("add_download",{url,dir:dir||null,connections:conns});await invoke("open_download_window",{id})}catch(e){alert(url+"\n"+e)}}
+ for(const url of list){
+  let id;
+  try{id=await invoke("add_download",{url,dir:dir||null,connections:conns})}
+  catch(error){alert(url+"\n"+error);continue}
+  try{await invoke("open_download_window",{id})}
+  catch(error){alert(t("addTitle")+": "+error)}
+ }
 }
-function openSet(){$("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;$("dSet").showModal()}
+function openSet(){
+ $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;
+ $("sScale").value=appScale;$("sScaleValue").textContent=appScale+"%";
+ $("sFontSize").value=appFontSize;$("sFontSizeValue").textContent=appFontSize+" px";
+ $("dSet").showModal();
+}
 async function browseDir(){
  try{
   const path=await window.__TAURI__.dialog.open({directory:true,multiple:false});
@@ -216,9 +271,16 @@ async function browseDir(){
  }catch(e){alert(String(e))}
 }
 function saveSet(){lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
- localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;$("dSet").close();applyTheme();applyLang()}
+ appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
+ appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
+ localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;
+ localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;
+ $("dSet").close();applyTheme();applyLang();applyDisplaySettings()}
+$("sScale").addEventListener("input",event=>{$("sScaleValue").textContent=event.target.value+"%"});
+$("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
-$("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)openDownloadWindow(+r.dataset.id)});
+$("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});
+document.documentElement.append($("rowMenu"));
 $("tb").addEventListener("contextmenu",e=>{
  const r=e.target.closest("tr.r");if(!r)return;
  e.preventDefault();sel=+r.dataset.id;render();
@@ -253,6 +315,7 @@ listen("downloads",e=>{
 }).catch(error=>alert("Could not monitor downloads: "+error));
 applyTheme();
 applyLang();
+applyDisplaySettings();
 </script>
 </body>
 </html>

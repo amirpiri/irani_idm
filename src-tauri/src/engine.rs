@@ -48,6 +48,7 @@ struct Item {
     total: Option<u64>,
     resumable: bool,
     status: Status,
+    removing: bool,
     segs: Vec<Arc<Seg>>,
     cancel: Arc<AtomicBool>,
     limit: Arc<AtomicU64>, // KB/s, 0 = unlimited
@@ -196,6 +197,7 @@ impl Manager {
                 s.id,
                 Item {
                     url: s.url, path: s.path, total: s.total, resumable: s.resumable, status, segs,
+                    removing: false,
                     cancel: Arc::new(AtomicBool::new(false)),
                     limit: Arc::new(AtomicU64::new(s.limit_kbps)),
                     speed: 0.0, last,
@@ -334,6 +336,7 @@ impl Manager {
             id,
             Item {
                 url: parsed.to_string(), path, total, resumable: ranged, status: Status::Paused, segs,
+                removing: false,
                 cancel: Arc::new(AtomicBool::new(false)),
                 limit: Arc::new(AtomicU64::new(0)),
                 speed: 0.0, last: 0,
@@ -373,10 +376,10 @@ impl Manager {
     }
 
     pub fn resume(&self, id: u64) {
-        let ok = matches!(
-            self.items.lock().unwrap().get(&id).map(|i| i.status.clone()),
-            Some(Status::Paused) | Some(Status::Error(_))
-        );
+        let ok = self.items.lock().unwrap().get(&id).is_some_and(|item| {
+            !item.removing
+                && matches!(item.status, Status::Paused | Status::Error(_))
+        });
         if ok {
             let m = self.clone();
             tauri::async_runtime::spawn(async move { m.run(id).await });
@@ -402,25 +405,71 @@ impl Manager {
     pub fn path_of(&self, id: u64) -> Option<PathBuf> {
         self.items.lock().unwrap().get(&id).map(|i| i.path.clone())
     }
-    pub fn remove(&self, id: u64, delete_file: bool) {
-        let it = self.items.lock().unwrap().remove(&id);
-        if let Some(it) = it {
-            it.cancel.store(true, Relaxed);
-            if delete_file {
-                let p = it.path;
-                tauri::async_runtime::spawn(async move {
-                    sleep(Duration::from_millis(1500)).await; // let workers release the file (Windows)
-                    let _ = tokio::fs::remove_file(p).await;
-                });
+    pub async fn remove(&self, id: u64, delete_file: bool) -> Result<(), String> {
+        {
+            let mut items = self.items.lock().unwrap();
+            let item = items.get_mut(&id).ok_or("Download not found")?;
+            if item.removing {
+                return Err("Download is already being removed".into());
+            }
+            item.removing = true;
+            item.cancel.store(true, Relaxed);
+        }
+
+        loop {
+            let downloading = self
+                .items
+                .lock()
+                .unwrap()
+                .get(&id)
+                .is_some_and(|item| item.status == Status::Downloading);
+            if !downloading {
+                break;
+            }
+            sleep(Duration::from_millis(50)).await;
+        }
+
+        if delete_file {
+            let path = self.items.lock().unwrap().get(&id).ok_or("Download not found")?.path.clone();
+            let mut last_error = None;
+            for attempt in 0..10 {
+                match tokio::fs::remove_file(&path).await {
+                    Ok(()) => {
+                        last_error = None;
+                        break;
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                        last_error = None;
+                        break;
+                    }
+                    Err(error) => {
+                        last_error = Some(error);
+                        if attempt < 9 {
+                            sleep(Duration::from_millis(100)).await;
+                        }
+                    }
+                }
+            }
+            if let Some(error) = last_error {
+                if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
+                    item.removing = false;
+                }
+                return Err(format!("Could not delete downloaded file: {error}"));
             }
         }
+
+        self.items.lock().unwrap().remove(&id).ok_or("Download not found")?;
         self.save();
+        Ok(())
     }
 
     async fn run(&self, id: u64) {
         let (url, path, segs, cancel, limit, ranged) = {
             let mut g = self.items.lock().unwrap();
             let Some(it) = g.get_mut(&id) else { return };
+            if it.removing {
+                return;
+            }
             it.status = Status::Downloading;
             it.cancel.store(false, Relaxed);
             (it.url.clone(), it.path.clone(), it.segs.clone(), it.cancel.clone(), it.limit.clone(), it.resumable)
@@ -485,7 +534,14 @@ async fn run_seg(
                 if tries > 5 {
                     return Err(e);
                 }
-                sleep(Duration::from_secs(tries * 2)).await;
+                tokio::select! {
+                    _ = sleep(Duration::from_secs(tries * 2)) => {}
+                    _ = async {
+                        while !cancel.load(Relaxed) {
+                            sleep(Duration::from_millis(50)).await;
+                        }
+                    } => return Ok(()),
+                }
             }
         }
     }
@@ -596,6 +652,75 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn manager_with_download() -> (Manager, PathBuf, u64) {
+        let data_dir = std::env::temp_dir().join(format!(
+            "irani-idm-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let manager = Manager::load(&data_dir);
+        let id = 1;
+        let path = data_dir.join("download.bin");
+        std::fs::write(&path, b"download").unwrap();
+        manager.items.lock().unwrap().insert(
+            id,
+            Item {
+                url: "https://example.test/download.bin".into(),
+                path: path.clone(),
+                total: Some(8),
+                resumable: true,
+                status: Status::Paused,
+                removing: false,
+                segs: Vec::new(),
+                cancel: Arc::new(AtomicBool::new(false)),
+                limit: Arc::new(AtomicU64::new(0)),
+                speed: 0.0,
+                last: 0,
+            },
+        );
+        (manager, path, id)
+    }
+
+    #[tokio::test]
+    async fn remove_deletes_the_file_when_requested() {
+        let (manager, path, id) = manager_with_download();
+
+        manager.remove(id, true).await.unwrap();
+
+        assert!(!path.exists());
+        assert!(manager.view(id).is_none());
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn remove_keeps_the_file_when_not_requested() {
+        let (manager, path, id) = manager_with_download();
+
+        manager.remove(id, false).await.unwrap();
+
+        assert!(path.exists());
+        assert!(manager.view(id).is_none());
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn failed_file_removal_keeps_download_available() {
+        let (manager, path, id) = manager_with_download();
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+
+        let error = manager.remove(id, true).await.unwrap_err();
+
+        assert!(error.starts_with("Could not delete downloaded file:"));
+        assert!(manager.view(id).is_some());
+        manager.remove(id, false).await.unwrap();
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
 
     #[tokio::test]
     async fn rate_limiter_caps_combined_connections() {

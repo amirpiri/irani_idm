@@ -5,18 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Download - Irani IDM</title>
 <style>
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-SemiBold.woff2") format("woff2");font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
 :root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--ok:#22a45d;--wait:#c5ced8;--er:#d33}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--ok:#22a45d;--wait:#45515e;--er:#e45555}
+:root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{min-height:100%;margin:0}
-body{min-width:0;padding:clamp(10px,2.5vw,20px);font:14px "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+body{zoom:var(--app-scale);min-width:0;padding:clamp(10px,2.5vw,20px);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx)}
 main{width:100%;max-width:760px;min-width:0;margin:0 auto;container-name:download-layout;container-type:inline-size}
-h1{font-size:19px;margin:0 0 7px;overflow-wrap:anywhere}
+h1{font-size:1.36em;margin:0 0 7px;overflow-wrap:anywhere}
 .url{color:var(--mut);direction:ltr;text-align:start;overflow-wrap:anywhere;user-select:text;margin-bottom:20px}
 .card{min-width:0;background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:14px;margin-bottom:12px}
 .progress{height:20px;position:relative;overflow:hidden;border-radius:6px;background:var(--bg)}
 .progress>span{display:block;height:100%;background:var(--ac);transition:width .3s}
-.progress>strong{position:absolute;inset:0;text-align:center;font-size:12px;line-height:20px}
+.progress>strong{position:absolute;inset:0;text-align:center;font-size:.857em;line-height:20px}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;margin-top:12px}
 .stat{display:flex;min-width:0;justify-content:space-between;gap:10px}
 .stat span:last-child{min-width:0;text-align:end;overflow-wrap:anywhere}
@@ -89,6 +93,16 @@ const currentWindow=window.__TAURI__.window.getCurrentWindow();
 const id=Number(currentWindow.label.slice("download-".length));
 const lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
+function applyDisplaySettings(){
+ const readSetting=(key,min,max,fallback)=>{
+  const stored=localStorage.getItem(key);
+  if(stored===null)return fallback;
+  const value=Number(stored);
+  return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;
+ };
+ document.documentElement.style.setProperty("--app-scale",String(readSetting("appScale",80,120,100)/100));
+ document.documentElement.style.setProperty("--app-font-size",readSetting("appFontSize",12,18,14)+"px");
+}
 const words={
  en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",h:"h",m:"m",s:"s"},
  fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",h:"ساعت",m:"دقیقه",s:"ثانیه"}
@@ -102,6 +116,7 @@ function applyTheme(){
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
 window.addEventListener("storage",event=>{
  if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
+ if(event.key==="appScale"||event.key==="appFontSize")applyDisplaySettings();
 });
 const nf=(value,digits=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:digits}).format(value);
 function bytes(value){
@@ -156,6 +171,7 @@ document.documentElement.lang=lang;
 document.documentElement.dir=lang==="fa"?"rtl":"ltr";
 document.querySelectorAll("[data-i]").forEach(element=>element.textContent=t(element.dataset.i));
 applyTheme();
+applyDisplaySettings();
 $("resume").addEventListener("click",()=>action("resume"));
 $("pause").addEventListener("click",()=>action("pause"));
 $("openFile").addEventListener("click",()=>action("open_item",{folder:false}));

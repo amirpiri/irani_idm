@@ -7,6 +7,10 @@ use std::{
 };
 use tauri::{Emitter, Manager as _, State};
 
+fn downloads_dir() -> Option<PathBuf> {
+    dirs::download_dir().or_else(|| dirs::home_dir().map(|home| home.join("Downloads")))
+}
+
 fn migrate_download_history(old_data_dir: &Path, new_data_dir: &Path) -> std::io::Result<()> {
     let old_store = old_data_dir.join("downloads.json");
     let new_store = new_data_dir.join("downloads.json");
@@ -27,7 +31,7 @@ async fn add_download(
     let dir = dir
         .filter(|d| !d.trim().is_empty())
         .map(PathBuf::from)
-        .or_else(dirs::download_dir)
+        .or_else(downloads_dir)
         .ok_or("no download directory")?;
     m.add(url, dir, connections.unwrap_or(8)).await
 }
@@ -58,8 +62,8 @@ fn set_limit(m: State<Manager>, id: u64, kbps: u64) {
 }
 
 #[tauri::command]
-fn remove(m: State<Manager>, id: u64, delete_file: bool) {
-    m.remove(id, delete_file)
+async fn remove(m: State<'_, Manager>, id: u64, delete_file: bool) -> Result<(), String> {
+    m.remove(id, delete_file).await
 }
 
 #[tauri::command]
@@ -145,7 +149,7 @@ fn open_item(m: State<Manager>, id: u64, folder: bool) -> Result<(), String> {
 
 #[tauri::command]
 fn default_dir() -> String {
-    dirs::download_dir()
+    downloads_dir()
         .map(|p| p.to_string_lossy().into())
         .unwrap_or_default()
 }
