@@ -17,6 +17,31 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - GitHub project shortcut and automatic latest-release checks with a download prompt
 - Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
 
+## Screenshots
+
+<table>
+  <thead>
+    <tr>
+      <th>English</th>
+      <th>فارسی</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Main window</strong><br><img src="screenshots/english-main.png" alt="Irani IDM main window in English" width="100%"></td>
+      <td><strong>پنجره اصلی</strong><br><img src="screenshots/persian-main.png" alt="پنجره اصلی برنامه در فارسی" width="100%"></td>
+    </tr>
+    <tr>
+      <td><strong>Download details</strong><br><img src="screenshots/english-download-details.png" alt="Download details in English" width="100%"></td>
+      <td><strong>جزئیات دانلود</strong><br><img src="screenshots/persian-download-details.png" alt="جزئیات دانلود به فارسی" width="100%"></td>
+    </tr>
+    <tr>
+      <td><strong>Settings</strong><br><img src="screenshots/english-settings.png" alt="Irani IDM settings in English" width="100%"></td>
+      <td><strong>تنظیمات</strong><br><img src="screenshots/persian-settings.png" alt="تنظیمات برنامه به فارسی" width="100%"></td>
+    </tr>
+  </tbody>
+</table>
+
 ## Prerequisites
 - Rust (stable): https://rustup.rs
 - `cargo install tauri-cli --version "^2"`
