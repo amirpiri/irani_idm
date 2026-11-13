@@ -42,7 +42,8 @@ cargo tauri dev                       # run
 cargo tauri build                     # installers
 ```
 Installers appear in `src-tauri/target/release/bundle/`:
-Windows → `.msi` / `.exe` (NSIS); Linux → `.deb`, `.rpm`, `.AppImage`.
+Windows → `.msi` / `.exe` (NSIS); Linux → `.deb`, `.rpm`, `.AppImage`;
+macOS → `.dmg`.
 Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 
 ## Build with GitHub Actions (no local setup)
@@ -50,8 +51,8 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 2. Open the **Actions** tab, select **Build**, and click **Run workflow** (it also runs on every push to `main` and on pull requests).
 3. When it finishes, download the packages from the run's **Artifacts**
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
-   `irani-idm-Linux`: .deb + .rpm + .AppImage).
-4. To publish a desktop release: `git tag v1.0.1 && git push origin v1.0.1` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
+   `irani-idm-Linux`: .deb + .rpm + .AppImage; `irani-idm-macOS`: .dmg).
+4. To publish a desktop release: `git tag v1.0.2 && git push origin main v1.0.2` — the desktop installers, macOS disk image, and Windows portable ZIP are attached to a GitHub Release automatically.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is

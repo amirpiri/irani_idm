@@ -20,6 +20,8 @@ jobs:
             bundles: "msi,nsis"
           - os: ubuntu-22.04
             bundles: "deb,rpm,appimage"
+          - os: macos-latest
+            bundles: "dmg"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -83,6 +85,7 @@ jobs:
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/rpm/*.rpm
             src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/dmg/*.dmg
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
