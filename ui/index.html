@@ -72,6 +72,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <div class="sep"></div>
   <button class="tb" onclick="openSet()"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="m9.7 2.8 4.6 0 .6 2.1 1.7 1 2.1-.6 2.3 4-1.5 1.6v2l1.5 1.7-2.3 4-2.1-.7-1.7 1-.6 2.1H9.7L9 18.9l-1.7-1-2.1.7-2.3-4 1.5-1.7v-2L2.9 9.3l2.3-4 2.1.6 1.7-1z" fill="#e7edfa"/><circle cx="12" cy="12" r="3.3" fill="#fff" stroke="#6579a8"/></svg><span data-i="settings"></span></button>
   <button class="tb" onclick="invoke('resume_all')"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="M4 15h16l-1 6H5z" fill="#dceeff"/><path d="M12 2v12m-5-5 5 5 5-5m-2 2 2 3" stroke="#2378c8" stroke-width="2"/><path d="M4 15h16" stroke="#2378c8"/></svg><span data-i="startQ"></span></button>
+  <button class="tb" onclick="openProjectPage()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 5H5v14h14v-4M13 5h6v6M19 5l-9 9"/></svg><span data-i="projectPage"></span></button>
 </div>
 <div id="main">
   <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
@@ -111,6 +112,17 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   </div>
 </dialog>
 
+<dialog id="dUpdate">
+  <h3 data-i="updateTitle"></h3>
+  <p data-i="updatePrompt"></p>
+  <div class="row"><span data-i="currentVersion"></span><strong id="currentVersion"></strong></div>
+  <div class="row"><span data-i="latestVersion"></span><strong id="latestVersion"></strong></div>
+  <div class="acts">
+    <button class="btn" onclick="$('dUpdate').close()" data-i="later"></button>
+    <button class="btn p" onclick="openUpdatePage()" data-i="downloadUpdate"></button>
+  </div>
+</dialog>
+
 <div id="rowMenu" role="menu" aria-label="Download actions" hidden>
   <button type="button" role="menuitem" data-action="toggle"></button>
   <div class="menu-sep" role="separator"></div>
@@ -126,14 +138,14 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -276,6 +288,24 @@ function saveSet(){lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.
  localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;
  localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;
  $("dSet").close();applyTheme();applyLang();applyDisplaySettings()}
+async function openProjectPage(){
+ try{await invoke("open_project_page")}catch(error){alert(String(error))}
+}
+let updateDownloadUrl="";
+async function checkForUpdate(){
+ try{
+  const update=await invoke("check_for_update");
+  if(!update)return;
+  $("currentVersion").textContent=update.current_version;
+  $("latestVersion").textContent=update.latest_version;
+  updateDownloadUrl=update.download_url;
+  $("dUpdate").showModal();
+ }catch(error){console.warn("Could not check for updates:",error)}
+}
+async function openUpdatePage(){
+ try{await invoke("open_release_page",{url:updateDownloadUrl});$("dUpdate").close()}
+ catch(error){alert(String(error))}
+}
 $("sScale").addEventListener("input",event=>{$("sScaleValue").textContent=event.target.value+"%"});
 $("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
@@ -316,6 +346,7 @@ listen("downloads",e=>{
 applyTheme();
 applyLang();
 applyDisplaySettings();
+checkForUpdate();
 </script>
 </body>
 </html>

@@ -14,6 +14,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Day, night, and system appearance modes
 - English + Persian UI (switch in Settings; RTL layout applied automatically)
 - Adjustable interface scale and font size
+- GitHub project shortcut and automatic latest-release checks with a download prompt
 - Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
 
 ## Prerequisites
@@ -50,7 +51,7 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 3. When it finishes, download the packages from the run's **Artifacts**
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
    `irani-idm-Linux`: .deb + .rpm + .AppImage).
-4. To publish a desktop release: `git tag v1.0.0 && git push origin v1.0.0` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
+4. To publish a desktop release: `git tag v1.0.1 && git push origin v1.0.1` — the desktop installers and Windows portable ZIP are attached to a GitHub Release automatically.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is

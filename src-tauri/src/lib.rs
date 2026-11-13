@@ -1,11 +1,94 @@
 mod engine;
 
 use engine::Manager;
+use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 use tauri::{Emitter, Manager as _, State};
+
+const PROJECT_URL: &str = "https://github.com/amirpiri/irani_idm";
+const LATEST_RELEASE_API: &str = "https://api.github.com/repos/amirpiri/irani_idm/releases/latest";
+
+#[derive(Deserialize)]
+struct GitHubRelease {
+    tag_name: String,
+    html_url: String,
+}
+
+#[derive(Serialize)]
+struct UpdateInfo {
+    current_version: String,
+    latest_version: String,
+    download_url: String,
+}
+
+fn release_version(tag: &str) -> Result<Version, String> {
+    Version::parse(tag.strip_prefix('v').unwrap_or(tag))
+        .map_err(|error| format!("Invalid release version '{tag}': {error}"))
+}
+
+#[tauri::command]
+fn open_project_page() -> Result<(), String> {
+    open::that(PROJECT_URL).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn open_release_page(url: String) -> Result<(), String> {
+    let parsed = url::Url::parse(&url).map_err(|error| error.to_string())?;
+    if parsed.scheme() != "https"
+        || parsed.host_str() != Some("github.com")
+        || !parsed
+            .path()
+            .starts_with("/amirpiri/irani_idm/releases/tag/")
+    {
+        return Err("Invalid release page URL".into());
+    }
+    open::that(parsed.as_str()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
+    let current_version = env!("CARGO_PKG_VERSION").to_string();
+    let current = release_version(&current_version)?;
+    let client = reqwest::Client::builder()
+        .user_agent(concat!("Irani-IDM/", env!("CARGO_PKG_VERSION")))
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|error| error.to_string())?;
+    let release: GitHubRelease = client
+        .get(LATEST_RELEASE_API)
+        .send()
+        .await
+        .map_err(|error| error.to_string())?
+        .error_for_status()
+        .map_err(|error| error.to_string())?
+        .json()
+        .await
+        .map_err(|error| error.to_string())?;
+    let latest = release_version(&release.tag_name)?;
+    if latest <= current {
+        return Ok(None);
+    }
+
+    let parsed_url = url::Url::parse(&release.html_url).map_err(|error| error.to_string())?;
+    if parsed_url.scheme() != "https"
+        || parsed_url.host_str() != Some("github.com")
+        || !parsed_url
+            .path()
+            .starts_with("/amirpiri/irani_idm/releases/tag/")
+    {
+        return Err("GitHub returned an invalid release page URL".into());
+    }
+
+    Ok(Some(UpdateInfo {
+        current_version,
+        latest_version: release.tag_name,
+        download_url: release.html_url,
+    }))
+}
 
 fn downloads_dir() -> Option<PathBuf> {
     dirs::download_dir().or_else(|| dirs::home_dir().map(|home| home.join("Downloads")))
@@ -182,6 +265,9 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            open_project_page,
+            open_release_page,
+            check_for_update,
             add_download,
             pause,
             resume,
@@ -196,4 +282,20 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running app");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::release_version;
+
+    #[test]
+    fn release_versions_accept_v_prefix_and_compare_semantically() {
+        assert!(release_version("v1.10.0").unwrap() > release_version("1.9.9").unwrap());
+        assert!(release_version("v2.0.0-beta.1").unwrap() < release_version("2.0.0").unwrap());
+    }
+
+    #[test]
+    fn release_versions_reject_invalid_tags() {
+        assert!(release_version("release-next").is_err());
+    }
 }

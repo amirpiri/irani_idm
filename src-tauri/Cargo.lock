@@ -1526,13 +1526,14 @@ checksum = "791930b43c0d5973160d90a8f3894509f2b273430f5c5c73b668636d0287c5c0"
 
 [[package]]
 name = "irani-idm"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "dirs 5.0.1",
  "futures-util",
  "open",
  "percent-encoding",
  "reqwest 0.12.28",
+ "semver",
  "serde",
  "serde_json",
  "tauri",
