@@ -33,12 +33,12 @@ h1{font-size:1.36em;margin:0 0 7px;overflow-wrap:anywhere}
 .segment-list{display:grid;gap:8px;margin-top:12px}
 .segment-row{display:grid;min-width:0;grid-template-columns:minmax(0,.7fr) minmax(100px,1fr) minmax(0,.7fr);gap:10px;align-items:center}
 .segment-info{text-align:end;overflow-wrap:anywhere}
-.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
 button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:7px;padding:7px 12px;cursor:pointer}
 button:hover:not(:disabled){border-color:var(--ac)}
 button:disabled{opacity:.5;cursor:default}
 .primary{background:var(--ac);border-color:var(--ac);color:#fff}
-.limit{display:flex;align-items:center;gap:6px}
+.limit{display:flex;align-items:center;justify-content:center;gap:6px}
 .limit input{width:85px}
 input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px}
 #error{color:var(--er);white-space:pre-wrap;overflow-wrap:anywhere}
@@ -71,11 +71,6 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
     </div>
   </section>
   <section class="card">
-    <div class="section-title" data-i="parts"></div>
-    <div id="pieces" class="pieces"></div>
-    <div id="segmentList" class="segment-list"></div>
-  </section>
-  <section class="card">
     <div class="limit"><label for="limit" data-i="limit"></label><input id="limit" type="number" min="0"><span>KB/s</span><button id="saveLimit" type="button" data-i="apply"></button></div>
     <div class="buttons">
       <button id="resume" class="primary" type="button" data-i="resume"></button>
@@ -84,6 +79,11 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
       <button id="openFolder" type="button" data-i="openFolder"></button>
       <button id="close" type="button" data-i="close"></button>
     </div>
+  </section>
+  <section class="card">
+    <div class="section-title" data-i="parts"></div>
+    <div id="pieces" class="pieces"></div>
+    <div id="segmentList" class="segment-list"></div>
   </section>
   <div id="error" role="alert"></div>
 </main>

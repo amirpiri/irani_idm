@@ -52,7 +52,7 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 3. When it finishes, download the packages from the run's **Artifacts**
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
    `irani-idm-Linux`: .deb + .rpm + .AppImage; `irani-idm-macOS`: .dmg).
-4. To publish a desktop release: `git tag v1.0.2 && git push origin main v1.0.2` — the desktop installers, macOS disk image, and Windows portable ZIP are attached to a GitHub Release automatically.
+4. To publish a desktop release: `git tag v1.0.3 && git push origin main v1.0.3` — the desktop installers, macOS disk image, and Windows portable ZIP are attached to a GitHub Release automatically.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is
