@@ -1,6 +1,6 @@
 {
   "productName": "Irani IDM",
-  "version": "1.0.3",
+  "version": "1.2.2",
   "identifier": "com.iranidm.desktop",
   "build": { "frontendDist": "../ui" },
   "app": {
