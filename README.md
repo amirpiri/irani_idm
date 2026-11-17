@@ -78,7 +78,7 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
 3. When it finishes, download the packages from the run's **Artifacts**
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
    `irani-idm-Linux`: .deb + .rpm + .AppImage; `irani-idm-macOS`: .dmg).
-4. To publish a desktop release: `git tag v1.0.3 && git push origin main v1.0.3` — the desktop installers, macOS disk image, and Windows portable ZIP are attached to a GitHub Release automatically.
+4. To publish a desktop release, create and push a version tag (for example, `git tag v1.1.1 && git push origin main v1.1.1`). The release workflow reads the version from the tag and applies it to the application before building, then attaches the desktop installers, macOS disk image, and Windows portable ZIP to a GitHub Release automatically.
 
 ## Changelog and GitHub releases
 Add user-facing changes under `## [Unreleased]` in `CHANGELOG.md` as you work.
