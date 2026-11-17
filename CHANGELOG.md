@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0]
+
+### Added
+- Display the application version in the main window.
+
+### Changed
+- Use the running application's version when checking for updates.
+
 ## [1.2.2]
 
 ### Fixed
