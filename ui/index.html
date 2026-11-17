@@ -10,6 +10,26 @@
 @font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
 :root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466;--ok:#22a45d;--er:#e45555}
+:root[data-palette="violet"]{--bg:#f3effb;--card:#fff;--tx:#29213c;--mut:#776b8d;--bd:#e2d9f0;--ac:#8254d7;--sel:#e5d8fb}
+:root[data-theme="dark"][data-palette="violet"]{--bg:#201b2c;--card:#2d253d;--tx:#f0eafa;--mut:#b2a4c9;--bd:#47395d;--ac:#b18af4;--sel:#49366a}
+:root[data-palette="emerald"]{--bg:#edf5f0;--card:#fff;--tx:#1c3027;--mut:#667d70;--bd:#d6e5db;--ac:#16865b;--sel:#ccebdc}
+:root[data-theme="dark"][data-palette="emerald"]{--bg:#192720;--card:#23352b;--tx:#e5f4eb;--mut:#9bb8a6;--bd:#365343;--ac:#42c98c;--sel:#2d5944}
+:root[data-palette="sunset"]{--bg:#fff2e9;--card:#fff;--tx:#42291f;--mut:#927365;--bd:#f0d9ca;--ac:#e66b3d;--sel:#ffddca}
+:root[data-theme="dark"][data-palette="sunset"]{--bg:#2b201d;--card:#3a2b26;--tx:#fff0e8;--mut:#c5a294;--bd:#594039;--ac:#ff9367;--sel:#62402f}
+:root[data-palette="rose"]{--bg:#fff0f4;--card:#fff;--tx:#3c202c;--mut:#8d6877;--bd:#efd7e0;--ac:#d94e83;--sel:#f9d5e3}
+:root[data-theme="dark"][data-palette="rose"]{--bg:#2b1d26;--card:#392632;--tx:#ffedf4;--mut:#c39bad;--bd:#563849;--ac:#f47cab;--sel:#5c3047}
+:root[data-palette="cyan"]{--bg:#eaf5f8;--card:#fff;--tx:#19313a;--mut:#63808a;--bd:#d1e5eb;--ac:#078ba8;--sel:#c9edf4}
+:root[data-theme="dark"][data-palette="cyan"]{--bg:#18272c;--card:#22363d;--tx:#e6f7fb;--mut:#98b9c2;--bd:#34515a;--ac:#40c5df;--sel:#28515d}
+:root[data-palette="amber"]{--bg:#faf4e8;--card:#fff;--tx:#382d19;--mut:#887653;--bd:#e9dfc8;--ac:#bd821b;--sel:#f3e2b9}
+:root[data-theme="dark"][data-palette="amber"]{--bg:#29251b;--card:#383122;--tx:#fff5dc;--mut:#c3b18a;--bd:#55482d;--ac:#edb94e;--sel:#594722}
+:root[data-palette="indigo"]{--bg:#eef0fb;--card:#fff;--tx:#222747;--mut:#68719a;--bd:#d9def2;--ac:#5865d9;--sel:#dce0fb}
+:root[data-theme="dark"][data-palette="indigo"]{--bg:#1d2036;--card:#292e49;--tx:#eef0ff;--mut:#a5acd2;--bd:#41496d;--ac:#929cff;--sel:#373e68}
+:root[data-palette="mint"]{--bg:#eaf7f3;--card:#fff;--tx:#1d3933;--mut:#64847b;--bd:#d0e9e1;--ac:#159b83;--sel:#c9eee4}
+:root[data-theme="dark"][data-palette="mint"]{--bg:#182b28;--card:#233b36;--tx:#e7faf5;--mut:#9bbeb4;--bd:#365b51;--ac:#51d3b5;--sel:#28554b}
+:root[data-palette="coral"]{--bg:#fff0ed;--card:#fff;--tx:#432522;--mut:#956e68;--bd:#f1d8d2;--ac:#ed6658;--sel:#ffdad4}
+:root[data-theme="dark"][data-palette="coral"]{--bg:#2d201f;--card:#3c2b29;--tx:#fff0ed;--mut:#c5a09a;--bd:#60413d;--ac:#ff9385;--sel:#603a37}
+:root[data-palette="graphite"]{--bg:#eff1f3;--card:#fff;--tx:#252b33;--mut:#707b87;--bd:#d9dee4;--ac:#566474;--sel:#dce2e9}
+:root[data-theme="dark"][data-palette="graphite"]{--bg:#1d2229;--card:#292f38;--tx:#edf1f5;--mut:#a2acb8;--bd:#414b58;--ac:#a8bacd;--sel:#394655}
 :root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -37,7 +57,7 @@ td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
 .pb b{position:absolute;inset:0;text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px}
-dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw)}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw);max-height:90vh;overflow-y:auto}
 dialog::backdrop{background:#0006}
 dialog h3{margin:0 0 10px}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}.row span:first-child{color:var(--mut)}
@@ -50,6 +70,17 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
 .fld.dir{justify-content:initial}.fld.dir input{min-width:0}
+.palette-heading{font-weight:600;margin:14px 0 9px}
+.palette-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.palette-option{position:relative;display:flex;align-items:center;gap:8px;min-width:0;min-height:43px;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--card);cursor:pointer;text-align:start;transition:border-color .15s,background .15s,transform .15s}
+.palette-option:hover{border-color:var(--ac);transform:translateY(-1px)}
+.palette-option:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.palette-option[aria-pressed="true"]{border:2px solid var(--ac);padding:7px;background:var(--sel)}
+.palette-option[aria-pressed="true"]::after{content:"✓";margin-inline-start:auto;color:var(--ac);font-size:.9em;font-weight:700}
+.palette-dot{width:22px;height:22px;flex:0 0 22px;border-radius:7px;background:var(--swatch);box-shadow:inset 0 0 0 1px #0001}
+.palette-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.88em}
+@media(max-width:460px){.palette-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.palette-option{transition:none}}
 .fld.range input[type=range]{flex:1;min-width:100px;padding:0;accent-color:var(--ac)}
 .fld.range output{min-width:48px;text-align:end;color:var(--mut);direction:ltr}
 #rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);color:var(--tx);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
@@ -96,6 +127,8 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <dialog id="dSet"><h3 data-i="settings"></h3>
   <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
   <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
+  <div class="palette-heading" data-i="colorTheme"></div>
+  <div id="paletteGrid" class="palette-grid" role="group" aria-label="Color theme"></div>
   <div class="fld range"><label for="sScale" data-i="uiScale"></label><input id="sScale" type="range" min="80" max="120" step="5"><output id="sScaleValue" for="sScale"></output></div>
   <div class="fld range"><label for="sFontSize" data-i="fontSize"></label><input id="sFontSize" type="range" min="12" max="18" step="1"><output id="sFontSizeValue" for="sFontSize"></output></div>
   <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
@@ -138,14 +171,14 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -165,6 +198,8 @@ const readDisplaySetting=(key,min,max,fallback)=>{
 };
 let appScale=readDisplaySetting("appScale",80,120,100), appFontSize=readDisplaySetting("appFontSize",12,18,14);
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
+const PALETTES=[{id:"ocean",swatch:"linear-gradient(135deg,#2b7de9 0 50%,#55c6e8 50%)"},{id:"violet",swatch:"linear-gradient(135deg,#8254d7 0 50%,#c4a5ff 50%)"},{id:"emerald",swatch:"linear-gradient(135deg,#16865b 0 50%,#72d5a4 50%)"},{id:"sunset",swatch:"linear-gradient(135deg,#e66b3d 0 50%,#ffc078 50%)"},{id:"rose",swatch:"linear-gradient(135deg,#d94e83 0 50%,#ffa9c7 50%)"},{id:"cyan",swatch:"linear-gradient(135deg,#078ba8 0 50%,#72dce9 50%)"},{id:"amber",swatch:"linear-gradient(135deg,#bd821b 0 50%,#f2d17b 50%)"},{id:"indigo",swatch:"linear-gradient(135deg,#5865d9 0 50%,#a5adff 50%)"},{id:"mint",swatch:"linear-gradient(135deg,#159b83 0 50%,#8be0c8 50%)"},{id:"coral",swatch:"linear-gradient(135deg,#ed6658 0 50%,#ffb2a4 50%)"},{id:"graphite",swatch:"linear-gradient(135deg,#566474 0 50%,#b5c0cc 50%)"}];
+let colorTheme=PALETTES.some(p=>p.id===localStorage.colorTheme)?localStorage.colorTheme:"ocean";
 const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
 function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-scale",String(appScale/100));
@@ -173,10 +208,19 @@ function applyDisplaySettings(){
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
  document.documentElement.dataset.theme=theme;
+ document.documentElement.dataset.palette=colorTheme;
+}
+function renderPalettes(){
+ $("paletteGrid").innerHTML=PALETTES.map(p=>`<button type="button" class="palette-option" data-palette="${p.id}" aria-pressed="${p.id===colorTheme}" aria-label="${t("palette"+p.id[0].toUpperCase()+p.id.slice(1))}"><span class="palette-dot" style="--swatch:${p.swatch}"></span><span class="palette-name">${t("palette"+p.id[0].toUpperCase()+p.id.slice(1))}</span></button>`).join("");
+}
+function choosePalette(id){
+ if(!PALETTES.some(p=>p.id===id))return;
+ colorTheme=id;localStorage.colorTheme=id;applyTheme();renderPalettes();
 }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
 window.addEventListener("storage",event=>{
  if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
+ if(event.key==="colorTheme"){colorTheme=PALETTES.some(p=>p.id===event.newValue)?event.newValue:"ocean";applyTheme();renderPalettes()}
  if(event.key==="appScale"||event.key==="appFontSize"){
   appScale=readDisplaySetting("appScale",80,120,100);appFontSize=readDisplaySetting("appFontSize",12,18,14);applyDisplaySettings();
  }
@@ -193,6 +237,7 @@ function applyLang(){
  document.documentElement.lang=lang;document.documentElement.dir=lang==="fa"?"rtl":"ltr";
  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
  document.querySelectorAll("[data-p]").forEach(e=>e.placeholder=t(e.dataset.p));
+ renderPalettes();
  render();
 }
 function render(){
@@ -274,6 +319,7 @@ function openSet(){
  $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;
  $("sScale").value=appScale;$("sScaleValue").textContent=appScale+"%";
  $("sFontSize").value=appFontSize;$("sFontSizeValue").textContent=appFontSize+" px";
+ renderPalettes();
  $("dSet").showModal();
 }
 async function browseDir(){
@@ -307,6 +353,7 @@ async function openUpdatePage(){
  catch(error){alert(String(error))}
 }
 $("sScale").addEventListener("input",event=>{$("sScaleValue").textContent=event.target.value+"%"});
+$("paletteGrid").addEventListener("click",event=>{const option=event.target.closest("[data-palette]");if(option)choosePalette(option.dataset.palette)});
 $("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
 $("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});

@@ -10,6 +10,26 @@
 @font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
 :root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--ok:#22a45d;--wait:#c5ced8;--er:#d33}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--ok:#22a45d;--wait:#45515e;--er:#e45555}
+:root[data-palette="violet"]{--bg:#f3effb;--card:#fff;--tx:#29213c;--mut:#776b8d;--bd:#e2d9f0;--ac:#8254d7}
+:root[data-theme="dark"][data-palette="violet"]{--bg:#201b2c;--card:#2d253d;--tx:#f0eafa;--mut:#b2a4c9;--bd:#47395d;--ac:#b18af4}
+:root[data-palette="emerald"]{--bg:#edf5f0;--card:#fff;--tx:#1c3027;--mut:#667d70;--bd:#d6e5db;--ac:#16865b}
+:root[data-theme="dark"][data-palette="emerald"]{--bg:#192720;--card:#23352b;--tx:#e5f4eb;--mut:#9bb8a6;--bd:#365343;--ac:#42c98c}
+:root[data-palette="sunset"]{--bg:#fff2e9;--card:#fff;--tx:#42291f;--mut:#927365;--bd:#f0d9ca;--ac:#e66b3d}
+:root[data-theme="dark"][data-palette="sunset"]{--bg:#2b201d;--card:#3a2b26;--tx:#fff0e8;--mut:#c5a294;--bd:#594039;--ac:#ff9367}
+:root[data-palette="rose"]{--bg:#fff0f4;--card:#fff;--tx:#3c202c;--mut:#8d6877;--bd:#efd7e0;--ac:#d94e83}
+:root[data-theme="dark"][data-palette="rose"]{--bg:#2b1d26;--card:#392632;--tx:#ffedf4;--mut:#c39bad;--bd:#563849;--ac:#f47cab}
+:root[data-palette="cyan"]{--bg:#eaf5f8;--card:#fff;--tx:#19313a;--mut:#63808a;--bd:#d1e5eb;--ac:#078ba8}
+:root[data-theme="dark"][data-palette="cyan"]{--bg:#18272c;--card:#22363d;--tx:#e6f7fb;--mut:#98b9c2;--bd:#34515a;--ac:#40c5df}
+:root[data-palette="amber"]{--bg:#faf4e8;--card:#fff;--tx:#382d19;--mut:#887653;--bd:#e9dfc8;--ac:#bd821b}
+:root[data-theme="dark"][data-palette="amber"]{--bg:#29251b;--card:#383122;--tx:#fff5dc;--mut:#c3b18a;--bd:#55482d;--ac:#edb94e}
+:root[data-palette="indigo"]{--bg:#eef0fb;--card:#fff;--tx:#222747;--mut:#68719a;--bd:#d9def2;--ac:#5865d9}
+:root[data-theme="dark"][data-palette="indigo"]{--bg:#1d2036;--card:#292e49;--tx:#eef0ff;--mut:#a5acd2;--bd:#41496d;--ac:#929cff}
+:root[data-palette="mint"]{--bg:#eaf7f3;--card:#fff;--tx:#1d3933;--mut:#64847b;--bd:#d0e9e1;--ac:#159b83}
+:root[data-theme="dark"][data-palette="mint"]{--bg:#182b28;--card:#233b36;--tx:#e7faf5;--mut:#9bbeb4;--bd:#365b51;--ac:#51d3b5}
+:root[data-palette="coral"]{--bg:#fff0ed;--card:#fff;--tx:#432522;--mut:#956e68;--bd:#f1d8d2;--ac:#ed6658}
+:root[data-theme="dark"][data-palette="coral"]{--bg:#2d201f;--card:#3c2b29;--tx:#fff0ed;--mut:#c5a09a;--bd:#60413d;--ac:#ff9385}
+:root[data-palette="graphite"]{--bg:#eff1f3;--card:#fff;--tx:#252b33;--mut:#707b87;--bd:#d9dee4;--ac:#566474}
+:root[data-theme="dark"][data-palette="graphite"]{--bg:#1d2229;--card:#292f38;--tx:#edf1f5;--mut:#a2acb8;--bd:#414b58;--ac:#a8bacd}
 :root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{min-height:100%;margin:0}
@@ -93,6 +113,8 @@ const currentWindow=window.__TAURI__.window.getCurrentWindow();
 const id=Number(currentWindow.label.slice("download-".length));
 const lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
+const colorThemes=["ocean","violet","emerald","sunset","rose","cyan","amber","indigo","mint","coral","graphite"];
+let colorTheme=colorThemes.includes(localStorage.colorTheme)?localStorage.colorTheme:"ocean";
 function applyDisplaySettings(){
  const readSetting=(key,min,max,fallback)=>{
   const stored=localStorage.getItem(key);
@@ -112,10 +134,12 @@ const $=name=>document.getElementById(name);
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
  document.documentElement.dataset.theme=theme;
+ document.documentElement.dataset.palette=colorTheme;
 }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
 window.addEventListener("storage",event=>{
  if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
+ if(event.key==="colorTheme"){colorTheme=colorThemes.includes(event.newValue)?event.newValue:"ocean";applyTheme()}
  if(event.key==="appScale"||event.key==="appFontSize")applyDisplaySettings();
 });
 const nf=(value,digits=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:digits}).format(value);
