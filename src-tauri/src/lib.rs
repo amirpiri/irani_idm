@@ -50,8 +50,13 @@ fn open_release_page(url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
-    let current_version = env!("CARGO_PKG_VERSION").to_string();
+fn app_version(app: tauri::AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+#[tauri::command]
+async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    let current_version = app.package_info().version.to_string();
     let current = release_version(&current_version)?;
     let client = reqwest::Client::builder()
         .user_agent(concat!("Irani-IDM/", env!("CARGO_PKG_VERSION")))
@@ -295,6 +300,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             open_project_page,
             open_release_page,
+            app_version,
             check_for_update,
             add_download,
             pause,

@@ -40,6 +40,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tb:hover{background:var(--bg)}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
 .sep{width:1px;background:var(--bd);margin:4px 6px}
 #main{flex:1;display:flex;min-height:0}
+#appVersion{padding:4px 12px;color:var(--mut);font-size:.8em;text-align:end;direction:ltr;user-select:text}
 #side{width:200px;background:var(--card);border-inline-start:1px solid var(--bd);padding:8px;overflow:auto;order:2}
 #side h4{margin:4px 8px 8px}
 .cat{padding:7px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between}
@@ -132,6 +133,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </div>
+<footer id="appVersion" aria-label="Application version"></footer>
 
 <dialog id="dAdd"><h3 data-i="addTitle"></h3>
   <div data-i="addHint" style="color:var(--mut);margin-bottom:6px"></div>
@@ -468,9 +470,14 @@ listen("downloads",e=>{
   }
  }
 }).catch(error=>alert("Could not monitor downloads: "+error));
+async function showAppVersion(){
+ try{$("appVersion").textContent=(lang==="fa"?"نسخه":"Version")+" "+await invoke("app_version")}
+ catch(error){console.warn("Could not read application version:",error)}
+}
 applyTheme();
 applyLang();
 applyDisplaySettings();
+showAppVersion();
 checkForUpdate();
 </script>
 </body>
