@@ -1,6 +1,6 @@
 mod engine;
 
-use engine::Manager;
+use engine::{Manager, ProxySettings};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -182,7 +182,7 @@ async fn open_download_window(
     let min_height = screen_height.min(480.0);
     let window_width = 820.0_f64.min((screen_width * 0.9).max(min_width));
     let max_height = (screen_height * 0.9).max(min_height);
-    let content_height: f64 = 560.0 + download.segment_count() as f64 * 32.0;
+    let content_height: f64 = 640.0;
     let window_height = content_height.clamp(min_height, max_height);
     let title = format!("{} - Irani IDM", download.name);
     let window_app = app.clone();
@@ -198,6 +198,7 @@ async fn open_download_window(
             )
             .title(title)
             .resizable(true)
+            .maximizable(false)
             .inner_size(window_width, window_height)
             .min_inner_size(min_width, min_height)
             .build()
@@ -235,6 +236,33 @@ fn default_dir() -> String {
     downloads_dir()
         .map(|p| p.to_string_lossy().into())
         .unwrap_or_default()
+}
+
+#[tauri::command]
+fn get_proxy_settings(m: State<Manager>) -> ProxySettings {
+    m.proxy_settings()
+}
+
+#[tauri::command]
+fn set_proxy_settings(app: tauri::AppHandle, m: State<Manager>, settings: ProxySettings) -> Result<(), String> {
+    let enabled = settings.enabled;
+    m.set_proxy_settings(settings)?;
+    let downloads = m.views(0.5);
+    let _ = app.emit("downloads", downloads.clone());
+    for download in downloads {
+        let label = format!("download-{}", download.id);
+        let _ = app.emit_to(
+            tauri::EventTarget::webview_window(label),
+            "proxy-settings-changed",
+            enabled,
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn test_proxy_settings(settings: ProxySettings) -> Result<String, String> {
+    Manager::test_proxy_settings(settings).await
 }
 
 pub fn run() {
@@ -278,7 +306,10 @@ pub fn run() {
             download_view,
             open_download_window,
             open_item,
-            default_dir
+            default_dir,
+            get_proxy_settings,
+            set_proxy_settings,
+            test_proxy_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running app");

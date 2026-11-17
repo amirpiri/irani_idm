@@ -8,6 +8,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Add downloads immediately while metadata is prepared in the background; probes get up to 15 seconds before falling back to a single-connection download
 - Pause / resume (also after restarting the app), auto-retry, stall timeout
 - Per-download speed limit, live speed / ETA, active connections and speed in the download list
+- Application-wide HTTP and SOCKS5 proxy support for downloads, with optional username/password authentication
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
 - Right-click download menu for pause/resume, open, copy URL, details, and delete
 - Category groups, search, queue start/stop all

@@ -57,9 +57,18 @@ td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
 .pb b{position:absolute;inset:0;text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px}
+.proxy-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:7px;padding:1px 6px;border:1px solid color-mix(in srgb,var(--ok) 45%,var(--bd));border-radius:999px;background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--ok);font-size:.78em;font-weight:600;vertical-align:middle}
+.proxy-badge[hidden]{display:none!important}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw);max-height:90vh;overflow-y:auto}
 dialog::backdrop{background:#0006}
 dialog h3{margin:0 0 10px}
+.settings-tabs{display:flex;gap:6px;padding:4px;margin-bottom:12px;border-bottom:1px solid var(--bd)}
+.settings-tab{flex:1;padding:9px 12px;border:0;border-bottom:2px solid transparent;border-radius:7px 7px 0 0;background:transparent;color:var(--mut);cursor:pointer}
+.settings-tab:hover{background:var(--bg);color:var(--tx)}
+.settings-tab[aria-selected="true"]{border-bottom-color:var(--ac);background:var(--sel);color:var(--tx);font-weight:600}
+.settings-panel[hidden]{display:none}
+.settings-panel{min-height:300px}
+.settings-panel .fld:first-child{margin-top:0}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}.row span:first-child{color:var(--mut)}
 .url{direction:ltr;text-align:start;word-break:break-all;font-size:calc(var(--app-font-size)*.857);user-select:text;margin-bottom:8px}
 textarea{width:100%;height:110px;direction:ltr;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
@@ -69,6 +78,12 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .sg{max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px}
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+.fld input.switch{appearance:none;-webkit-appearance:none;position:relative;width:42px;height:24px;flex:0 0 42px;margin:0;padding:0;border:1px solid var(--bd);border-radius:999px;background:var(--mut);cursor:pointer;transition:background .18s,border-color .18s}
+.fld input.switch::before{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:transform .18s}
+.fld input.switch:checked{background:var(--ac);border-color:var(--ac)}
+.fld input.switch:checked::before{transform:translateX(18px)}
+.fld input.switch:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+.fld input.switch:disabled{opacity:.55;cursor:default}
 .fld.dir{justify-content:initial}.fld.dir input{min-width:0}
 .palette-heading{font-weight:600;margin:14px 0 9px}
 .palette-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
@@ -125,14 +140,33 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 </dialog>
 
 <dialog id="dSet"><h3 data-i="settings"></h3>
-  <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
-  <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
-  <div class="palette-heading" data-i="colorTheme"></div>
-  <div id="paletteGrid" class="palette-grid" role="group" aria-label="Color theme"></div>
-  <div class="fld range"><label for="sScale" data-i="uiScale"></label><input id="sScale" type="range" min="80" max="120" step="5"><output id="sScaleValue" for="sScale"></output></div>
-  <div class="fld range"><label for="sFontSize" data-i="fontSize"></label><input id="sFontSize" type="range" min="12" max="18" step="1"><output id="sFontSizeValue" for="sFontSize"></output></div>
-  <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
-  <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
+  <div class="settings-tabs" role="tablist" aria-label="Settings categories">
+    <button class="settings-tab" id="settingsTabGeneral" type="button" role="tab" aria-controls="settingsGeneral" aria-selected="true" onclick="setSettingsTab('general')" data-i="general"></button>
+    <button class="settings-tab" id="settingsTabAppearance" type="button" role="tab" aria-controls="settingsAppearance" aria-selected="false" onclick="setSettingsTab('appearance')" data-i="appearance"></button>
+    <button class="settings-tab" id="settingsTabProxy" type="button" role="tab" aria-controls="settingsProxy" aria-selected="false" onclick="setSettingsTab('proxy')" data-i="proxy"></button>
+  </div>
+  <section class="settings-panel" id="settingsGeneral" role="tabpanel" aria-labelledby="settingsTabGeneral">
+    <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
+    <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
+    <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
+  </section>
+  <section class="settings-panel" id="settingsAppearance" role="tabpanel" aria-labelledby="settingsTabAppearance" hidden>
+    <div class="fld"><label data-i="appearance"></label><select id="sTheme"><option value="system" data-i="themeSystem"></option><option value="light" data-i="themeLight"></option><option value="dark" data-i="themeDark"></option></select></div>
+    <div class="palette-heading" data-i="colorTheme"></div>
+    <div id="paletteGrid" class="palette-grid" role="group" aria-label="Color theme"></div>
+    <div class="fld range"><label for="sScale" data-i="uiScale"></label><input id="sScale" type="range" min="80" max="120" step="5"><output id="sScaleValue" for="sScale"></output></div>
+    <div class="fld range"><label for="sFontSize" data-i="fontSize"></label><input id="sFontSize" type="range" min="12" max="18" step="1"><output id="sFontSizeValue" for="sFontSize"></output></div>
+  </section>
+  <section class="settings-panel" id="settingsProxy" role="tabpanel" aria-labelledby="settingsTabProxy" hidden>
+    <div class="fld"><label for="sProxyEnabled" data-i="proxyEnabled"></label><input id="sProxyEnabled" class="switch" type="checkbox" role="switch" aria-label="Enable proxy for downloads"></div>
+    <div class="fld"><label data-i="proxyType"></label><select id="sProxyType"><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></div>
+    <div class="fld"><label data-i="proxyHost"></label><input id="sProxyHost" placeholder="127.0.0.1" style="width:65%;direction:ltr"></div>
+    <div class="fld"><label data-i="proxyPort"></label><input id="sProxyPort" type="number" min="1" max="65535" style="width:100px"></div>
+    <div class="fld"><label data-i="proxyUsername"></label><input id="sProxyUsername" autocomplete="off" style="width:65%;direction:ltr"></div>
+    <div class="fld"><label data-i="proxyPassword"></label><input id="sProxyPassword" type="password" autocomplete="new-password" style="width:65%;direction:ltr"></div>
+    <div id="proxyError" role="alert" style="color:var(--er);white-space:pre-wrap"></div>
+    <div class="fld"><span></span><button class="btn" type="button" onclick="testProxy()" data-i="testProxy"></button></div>
+  </section>
   <div class="acts"><button class="btn" onclick="dSet.close()" data-i="cancel"></button><button class="btn p" onclick="saveSet()" data-i="ok"></button></div>
 </dialog>
 
@@ -171,17 +205,19 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
+en:{add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
+ proxyEnabled:"Use proxy for downloads",proxyType:"Proxy type",proxyHost:"Proxy host",proxyPort:"Proxy port",proxyUsername:"Username (optional)",proxyPassword:"Password (optional)",testProxy:"Test proxy",
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
+fa:{add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
+ proxyEnabled:"استفاده از پراکسی برای دانلودها",proxyType:"نوع پراکسی",proxyHost:"نشانی پراکسی",proxyPort:"درگاه پراکسی",proxyUsername:"نام کاربری (اختیاری)",proxyPassword:"گذرواژه (اختیاری)",testProxy:"آزمایش پراکسی",
  all:"همه دانلودها",compressed:"فایلهای فشرده",documents:"اسناد",music:"موسیقی",programs:"برنامه ها",video:"تصویری",images:"تصاویر",unfinished:"ناتمام",completed:"تکمیل شده",
  st_preparing:"در حال آماده‌سازی…",st_downloading:"در حال دریافت…",st_paused:"متوقف",st_completed:"کامل",st_error:"خطا",rx:"در حال دریافت…",done:"انجام شد",wait:"در انتظار",
  active:"فعال",complete:"کامل",pauseB:"ایست",resumeB:"ادامه",delFile:"فایل از دیسک هم حذف شود؟",h:"ساعت",m:"دقیقه",s:"ثانیه"}};
@@ -245,7 +281,7 @@ function render(){
  $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
   const activeConnections=d.segments.filter(s=>s.state===1).length;
-  return `<tr class="r ${d.id===sel?"sel":""}" data-id="${d.id}"><td class="n" title="${esc(d.name)}">${esc(d.name)}</td><td>${bytes(d.total)}</td>
+  return `<tr class="r ${d.id===sel?"sel":""}" data-id="${d.id}"><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td>${bytes(d.total)}</td>
   <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
   <td><div class="pb ${c}"><div style="width:${p}%"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
@@ -315,12 +351,28 @@ async function doAdd(){
   catch(error){alert(t("addTitle")+": "+error)}
  }
 }
-function openSet(){
+async function openSet(){
  $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;
  $("sScale").value=appScale;$("sScaleValue").textContent=appScale+"%";
  $("sFontSize").value=appFontSize;$("sFontSizeValue").textContent=appFontSize+" px";
- renderPalettes();
+ $("proxyError").textContent="";
+ try{
+  const proxy=await invoke("get_proxy_settings");
+  $("sProxyEnabled").checked=proxy.enabled;$("sProxyType").value=proxy.protocol;
+  $("sProxyHost").value=proxy.host;$("sProxyPort").value=proxy.port;
+  $("sProxyUsername").value=proxy.username;$("sProxyPassword").value=proxy.password;
+ }catch(error){$("proxyError").textContent=String(error)}
+ renderPalettes();setSettingsTab("general");
  $("dSet").showModal();
+}
+function setSettingsTab(tab){
+ const tabs=["general","appearance","proxy"];
+ if(!tabs.includes(tab))return;
+ for(const name of tabs){
+  const selected=name===tab;
+  $("settingsTab"+name[0].toUpperCase()+name.slice(1)).setAttribute("aria-selected",String(selected));
+  $("settings"+name[0].toUpperCase()+name.slice(1)).hidden=!selected;
+ }
 }
 async function browseDir(){
  try{
@@ -328,12 +380,38 @@ async function browseDir(){
   if(typeof path==="string")$("sDir").value=path;
  }catch(e){alert(String(e))}
 }
-function saveSet(){lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
+async function testProxy(){
+ $("proxyError").textContent=lang==="fa"?"در حال آزمایش اتصال…":"Testing proxy connection…";
+ const settings={enabled:true,protocol:$("sProxyType").value,host:$("sProxyHost").value.trim(),port:Math.min(65535,Math.max(1,Number($("sProxyPort").value)||0)),username:$("sProxyUsername").value,password:$("sProxyPassword").value};
+ try{
+  const result=await invoke("test_proxy_settings",{settings});
+  $("proxyError").style.color="var(--ok)";$("proxyError").textContent=result;
+ }catch(error){
+  $("proxyError").style.color="var(--er)";$("proxyError").textContent=String(error);
+ }
+}
+async function applyProxySettings(){
+ const settings={enabled:$('sProxyEnabled').checked,protocol:$('sProxyType').value,host:$('sProxyHost').value.trim(),port:Math.min(65535,Math.max(1,Number($('sProxyPort').value)||0)),username:$('sProxyUsername').value,password:$('sProxyPassword').value};
+ try{
+  await invoke("set_proxy_settings",{settings});
+  $("proxyError").textContent="";
+ }catch(error){
+  $("proxyError").textContent=String(error);
+ }
+}
+async function saveSet(){
+ $("proxyError").textContent="";
+ $("proxyError").style.color="var(--er)";
+ const proxy={enabled:$("sProxyEnabled").checked,protocol:$("sProxyType").value,host:$("sProxyHost").value.trim(),port:Math.min(65535,Math.max(1,Number($("sProxyPort").value)||0)),username:$("sProxyUsername").value,password:$("sProxyPassword").value};
+ try{await invoke("set_proxy_settings",{settings:proxy})}
+ catch(error){$("proxyError").textContent=String(error);return}
+ lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
  appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
  appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
  localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;
  localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;
  $("dSet").close();applyTheme();applyLang();applyDisplaySettings()}
+$("sProxyEnabled").addEventListener("change",applyProxySettings);
 async function openProjectPage(){
  try{await invoke("open_project_page")}catch(error){alert(String(error))}
 }

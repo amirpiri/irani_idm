@@ -51,6 +51,8 @@ struct Item {
     resumable: bool,
     file_created: bool,
     status: Status,
+    proxy_used: bool,
+    restart_after_cancel: bool,
     connections: u32,
     metadata_pending: bool,
     removing: bool,
@@ -133,6 +135,8 @@ struct Saved {
     #[serde(default)]
     metadata_pending: bool,
     completed: bool,
+    #[serde(default)]
+    proxy_used: bool,
     error: Option<String>,
     limit_kbps: u64,
     segs: Vec<SavedSeg>,
@@ -150,7 +154,7 @@ fn default_file_created() -> bool {
 pub struct SegView { done: u64, total: Option<u64>, state: u8 }
 #[derive(Serialize, Clone)]
 pub struct View {
-    id: u64,
+    pub id: u64,
     pub name: String,
     url: String,
     path: String,
@@ -159,24 +163,71 @@ pub struct View {
     speed: u64,
     eta: Option<u64>,
     status: &'static str,
+    proxy_used: bool,
     error: Option<String>,
     resumable: bool,
     limit_kbps: u64,
     segments: Vec<SegView>,
 }
 
-impl View {
-    pub fn segment_count(&self) -> usize {
-        self.segments.len()
-    }
-}
-
 #[derive(Clone)]
 pub struct Manager {
     items: Arc<Mutex<HashMap<u64, Item>>>,
-    client: reqwest::Client,
+    client: Arc<Mutex<reqwest::Client>>,
     store: PathBuf,
+    proxy_store: PathBuf,
+    proxy: Arc<Mutex<ProxySettings>>,
     next_id: Arc<AtomicU64>,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProxySettings {
+    pub enabled: bool,
+    pub protocol: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+}
+
+impl Default for ProxySettings {
+    fn default() -> Self {
+        Self { enabled: false, protocol: "http".into(), host: String::new(), port: 8080, username: String::new(), password: String::new() }
+    }
+}
+
+fn build_client(settings: &ProxySettings) -> Result<reqwest::Client, String> {
+    let mut builder = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (RustDM/0.1)")
+        .connect_timeout(Duration::from_secs(15));
+    if settings.enabled {
+        let scheme = match settings.protocol.as_str() {
+            "http" => "http",
+            // Resolve destination hostnames through the SOCKS server. This is
+            // important on networks where local DNS cannot resolve them.
+            "socks5" => "socks5h",
+            _ => return Err("Unsupported proxy protocol".into()),
+        };
+        if settings.host.trim().is_empty() || settings.port == 0 {
+            return Err("Enter a valid proxy host and port".into());
+        }
+        let host = settings.host.trim();
+        let host = if host.contains(':') && !host.starts_with('[') {
+            format!("[{host}]")
+        } else {
+            host.to_string()
+        };
+        let mut url = url::Url::parse(&format!("{scheme}://{host}:{}", settings.port))
+            .map_err(|_| "Invalid proxy address".to_string())?;
+        if !settings.username.is_empty() {
+            url.set_username(&settings.username).map_err(|_| "Invalid proxy username".to_string())?;
+            url.set_password((!settings.password.is_empty()).then_some(settings.password.as_str()))
+                .map_err(|_| "Invalid proxy password".to_string())?;
+        }
+        builder = builder.proxy(reqwest::Proxy::all(url.as_str()).map_err(|error| error.to_string())?);
+    }
+    builder.build().map_err(|error| error.to_string())
 }
 
 impl Manager {
@@ -216,6 +267,8 @@ impl Manager {
                 s.id,
                 Item {
                     url: s.url, path: s.path, total: s.total, resumable: s.resumable, status,
+                    proxy_used: s.proxy_used,
+                    restart_after_cancel: false,
                     file_created: s.file_created,
                     connections: s.connections.clamp(1, 32), metadata_pending: s.metadata_pending, segs,
                     removing: false,
@@ -225,17 +278,71 @@ impl Manager {
                 },
             );
         }
-        let client = reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (RustDM/0.1)")
-            .connect_timeout(Duration::from_secs(15))
-            .build()
-            .expect("http client");
+        let proxy_store = data_dir.join("proxy.json");
+        let proxy: ProxySettings = std::fs::read(&proxy_store).ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default();
+        let client = build_client(&proxy).expect("valid saved proxy settings");
         Manager {
             items: Arc::new(Mutex::new(map)),
-            client,
+            client: Arc::new(Mutex::new(client)),
             store,
+            proxy_store,
+            proxy: Arc::new(Mutex::new(proxy)),
             next_id: Arc::new(AtomicU64::new(max + 1)),
         }
+    }
+
+    pub fn proxy_settings(&self) -> ProxySettings {
+        self.proxy.lock().unwrap().clone()
+    }
+
+    pub fn set_proxy_settings(&self, settings: ProxySettings) -> Result<(), String> {
+        let client = build_client(&settings)?;
+        let json = serde_json::to_vec_pretty(&settings).map_err(|error| error.to_string())?;
+        std::fs::write(&self.proxy_store, json).map_err(|error| error.to_string())?;
+        *self.client.lock().unwrap() = client;
+        let changed = {
+            let mut current = self.proxy.lock().unwrap();
+            let changed = *current != settings;
+            *current = settings;
+            changed
+        };
+        // Existing HTTP clients keep their original proxy configuration.
+        // Stop active transfers so they can resume with the newly built client.
+        if changed {
+            for item in self.items.lock().unwrap().values_mut() {
+                if item.status == Status::Downloading && !item.removing {
+                    item.restart_after_cancel = true;
+                    item.cancel.store(true, Relaxed);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn test_proxy_settings(settings: ProxySettings) -> Result<String, String> {
+        // Testing should work before the user enables the proxy globally. The
+        // test always routes this one request through the supplied endpoint.
+        let mut test_settings = settings;
+        test_settings.enabled = true;
+        let client = build_client(&test_settings)?;
+        let response = client
+            .get("https://api.ipify.org")
+            .timeout(Duration::from_secs(15))
+            .send()
+            .await
+            .map_err(|error| format!("Proxy connection failed: {error}"))?
+            .error_for_status()
+            .map_err(|error| format!("Proxy request failed: {error}"))?;
+        let ip = response
+            .text()
+            .await
+            .map_err(|error| format!("Could not read proxy test response: {error}"))?;
+        let ip = ip.trim();
+        if ip.is_empty() {
+            return Err("The proxy test returned an empty IP address".into());
+        }
+        Ok(format!("Proxy connection successful. Exit IP: {ip}"))
     }
 
     pub fn save(&self) {
@@ -254,6 +361,7 @@ impl Manager {
                 connections: it.connections,
                 metadata_pending: it.metadata_pending,
                 completed: it.status == Status::Completed,
+                proxy_used: it.proxy_used,
                 error: if let Status::Error(e) = &it.status { Some(e.clone()) } else { None },
                 limit_kbps: it.limit.load(Relaxed),
                 segs: it.segs.iter().map(|s| SavedSeg { start: s.start, end: s.end, done: s.done.load(Relaxed) }).collect(),
@@ -267,6 +375,7 @@ impl Manager {
     /// Snapshot for the UI; `dt` = seconds since previous call (for speed).
     pub fn views(&self, dt: f64) -> Vec<View> {
         let mut g = self.items.lock().unwrap();
+        let proxy_enabled = self.proxy.lock().unwrap().enabled;
         let mut v: Vec<View> = g
             .iter_mut()
             .map(|(id, it)| {
@@ -274,7 +383,7 @@ impl Manager {
                 let inst = downloaded.saturating_sub(it.last) as f64 / dt.max(0.05);
                 it.last = downloaded;
                 it.speed = if it.status == Status::Downloading { it.speed * 0.6 + inst * 0.4 } else { 0.0 };
-                Self::view_of(*id, it)
+                Self::view_of(*id, it, proxy_enabled)
             })
             .collect();
         v.sort_by_key(|x| x.id);
@@ -282,10 +391,12 @@ impl Manager {
     }
 
     pub fn view(&self, id: u64) -> Option<View> {
-        self.items.lock().unwrap().get(&id).map(|it| Self::view_of(id, it))
+        let items = self.items.lock().unwrap();
+        let proxy_enabled = self.proxy.lock().unwrap().enabled;
+        items.get(&id).map(|it| Self::view_of(id, it, proxy_enabled))
     }
 
-    fn view_of(id: u64, it: &Item) -> View {
+    fn view_of(id: u64, it: &Item, proxy_enabled: bool) -> View {
         let downloaded: u64 = it.segs.iter().map(|s| s.done.load(Relaxed)).sum();
         let eta = match (it.total, it.speed > 1.0) {
             (Some(t), true) => Some((t.saturating_sub(downloaded) as f64 / it.speed) as u64),
@@ -308,6 +419,7 @@ impl Manager {
             speed: it.speed as u64,
             eta,
             status,
+            proxy_used: it.proxy_used && proxy_enabled && it.status == Status::Downloading,
             error,
             resumable: it.resumable,
             limit_kbps: it.limit.load(Relaxed),
@@ -346,6 +458,8 @@ impl Manager {
                     resumable: false,
                     file_created: false,
                     status: Status::Preparing,
+                    proxy_used: false,
+                    restart_after_cancel: false,
                     connections,
                     metadata_pending: false,
                     removing: false,
@@ -541,7 +655,8 @@ impl Manager {
     }
 
     async fn probe(&self, u: &url::Url) -> Result<(Option<u64>, bool, String), String> {
-        let r = self.client.get(u.as_str()).header("Range", "bytes=0-0").send().await.map_err(|e| e.to_string())?;
+        let client = self.client.lock().unwrap().clone();
+        let r = client.get(u.as_str()).header("Range", "bytes=0-0").send().await.map_err(|e| e.to_string())?;
         let st = r.status();
         if !st.is_success() {
             return Err(format!("HTTP {st}"));
@@ -718,15 +833,17 @@ impl Manager {
             }
             it.status = Status::Downloading;
             it.cancel.store(false, Relaxed);
+            it.proxy_used = self.proxy.lock().unwrap().enabled;
             (it.url.clone(), it.path.clone(), it.segs.clone(), it.cancel.clone(), it.limit.clone(), it.resumable)
         };
+        let client = self.client.lock().unwrap().clone();
         let pacer = Arc::new(RateLimiter::new());
         let handles: Vec<_> = segs
             .iter()
             .filter(|s| s.state.load(Relaxed) != DONE)
             .map(|s| {
                 tokio::spawn(run_seg(
-                    self.client.clone(),
+                    client.clone(),
                     url.clone(),
                     path.clone(),
                     s.clone(),
@@ -747,20 +864,28 @@ impl Manager {
                 Err(e) => err = Some(e.to_string()),
             }
         }
-        if let Some(it) = self.items.lock().unwrap().get_mut(&id) {
+        let restart = if let Some(it) = self.items.lock().unwrap().get_mut(&id) {
             let all_done = it.segs.iter().all(|s| s.state.load(Relaxed) == DONE);
+            let restart = it.restart_after_cancel && !it.removing && !all_done;
+            it.restart_after_cancel = false;
             it.status = if all_done {
                 if it.total.is_none() {
                     it.total = Some(it.segs.iter().map(|s| s.done.load(Relaxed)).sum());
                 }
                 Status::Completed
+            } else if restart {
+                Status::Paused
             } else if let Some(e) = err {
                 Status::Error(e)
             } else {
                 Status::Paused
             };
-        }
+            restart
+        } else { false };
         self.save();
+        if restart {
+            self.resume(id);
+        }
     }
 }
 
@@ -798,6 +923,31 @@ fn make_segments(total: Option<u64>, ranged: bool, connections: u32) -> Vec<Arc<
 #[cfg(test)]
 mod segment_tests {
     use super::*;
+
+    #[test]
+    fn proxy_client_supports_http_and_socks5() {
+        for protocol in ["http", "socks5"] {
+            let settings = ProxySettings {
+                enabled: true,
+                protocol: protocol.into(),
+                host: "127.0.0.1".into(),
+                port: 1080,
+                username: "user name".into(),
+                password: "p@ss".into(),
+            };
+            assert!(build_client(&settings).is_ok(), "{protocol} proxy should build");
+        }
+    }
+
+    #[test]
+    fn invalid_proxy_settings_are_rejected() {
+        let settings = ProxySettings {
+            enabled: true,
+            protocol: "ftp".into(),
+            ..ProxySettings::default()
+        };
+        assert!(build_client(&settings).is_err());
+    }
 
     #[test]
     fn ranged_download_uses_requested_connections_for_large_files() {
@@ -1030,6 +1180,8 @@ mod tests {
                 resumable: true,
                 file_created: true,
                 status: Status::Paused,
+                proxy_used: false,
+                restart_after_cancel: false,
                 connections: 8,
                 metadata_pending: false,
                 removing: false,
@@ -1042,6 +1194,39 @@ mod tests {
         );
         manager.next_id.store(id + 1, Relaxed);
         (manager, path, id)
+    }
+
+    #[tokio::test]
+    async fn disabling_proxy_hides_proxy_indicator_for_active_downloads() {
+        let (manager, path, id) = manager_with_download();
+        {
+            let mut items = manager.items.lock().unwrap();
+            let item = items.get_mut(&id).unwrap();
+            item.status = Status::Downloading;
+            item.proxy_used = true;
+        }
+        let enabled = ProxySettings {
+            enabled: true,
+            host: "127.0.0.1".into(),
+            port: 8080,
+            ..ProxySettings::default()
+        };
+        manager.set_proxy_settings(enabled.clone()).unwrap();
+        assert!(manager.view(id).unwrap().proxy_used);
+        {
+            let items = manager.items.lock().unwrap();
+            let item = items.get(&id).unwrap();
+            assert!(item.cancel.load(Relaxed), "active transfer should be interrupted to switch clients");
+            assert!(item.restart_after_cancel, "active transfer should be scheduled to resume");
+        }
+
+        let disabled = ProxySettings { enabled: false, ..enabled };
+        manager.set_proxy_settings(disabled).unwrap();
+        assert!(!manager.view(id).unwrap().proxy_used);
+
+        manager.items.lock().unwrap().get_mut(&id).unwrap().status = Status::Paused;
+        manager.remove(id, false).await.unwrap();
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 
     #[tokio::test]

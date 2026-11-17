@@ -45,7 +45,11 @@ h1{font-size:1.36em;margin:0 0 7px;overflow-wrap:anywhere}
 .stat{display:flex;min-width:0;justify-content:space-between;gap:10px}
 .stat span:last-child{min-width:0;text-align:end;overflow-wrap:anywhere}
 .stat span:first-child,.segment-info{color:var(--mut)}
+.proxy-badge{display:inline-flex;align-items:center;gap:4px;margin-top:10px;padding:3px 9px;border:1px solid color-mix(in srgb,var(--ok) 45%,var(--bd));border-radius:999px;background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--ok);font-size:.86em;font-weight:600}
+.proxy-badge[hidden]{display:none!important}
 .section-title{font-weight:600;margin:0 0 10px}
+details.section-title>summary{cursor:pointer;user-select:none;list-style-position:inside}
+details.section-title[open]>summary{margin-bottom:10px}
 .pieces{display:flex;direction:ltr;gap:3px;height:24px;padding:3px;background:var(--bg);border-radius:5px}
 .piece{flex:1;min-width:3px;position:relative;overflow:hidden;background:var(--wait);border-radius:2px}
 .piece>span{position:absolute;inset-block:0;left:0;background:var(--ac)}
@@ -77,6 +81,7 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
 <main>
   <h1 id="name">Download</h1>
   <div id="url" class="url"></div>
+  <div id="proxyBadge" class="proxy-badge" hidden>↗ <span data-i="proxyUsed"></span></div>
   <section class="card">
     <div class="progress" role="progressbar" aria-label="Download progress" aria-valuemin="0" aria-valuemax="100">
       <span id="overallBar"></span><strong id="overallPct">0%</strong>
@@ -101,9 +106,11 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
     </div>
   </section>
   <section class="card">
-    <div class="section-title" data-i="parts"></div>
     <div id="pieces" class="pieces"></div>
-    <div id="segmentList" class="segment-list"></div>
+    <details class="section-title">
+      <summary data-i="parts"></summary>
+      <div id="segmentList" class="segment-list"></div>
+    </details>
   </section>
   <div id="error" role="alert"></div>
 </main>
@@ -126,8 +133,8 @@ function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-font-size",readSetting("appFontSize",12,18,14)+"px");
 }
 const words={
- en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",h:"h",m:"m",s:"s"},
- fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",h:"ساعت",m:"دقیقه",s:"ثانیه"}
+ en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
+ fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
 };
 const t=key=>words[lang][key]||key;
 const $=name=>document.getElementById(name);
@@ -155,10 +162,32 @@ function duration(value){
  return [hours&&`${nf(hours,0)} ${t("h")}`,(hours||minutes)&&`${nf(minutes,0)} ${t("m")}`,`${nf(seconds,0)} ${t("s")}`].filter(Boolean).join(" ");
 }
 function showError(message=""){$("error").textContent=message}
+let proxyBadgeUpdate=0;
+let currentDownload=null;
+let proxyEnabled=null;
+async function updateProxyBadge(download){
+ currentDownload=download;
+ if(proxyEnabled!==null){
+  $("proxyBadge").hidden=!(proxyEnabled&&download.proxy_used&&download.status==="downloading");
+  return;
+ }
+ const update=++proxyBadgeUpdate;
+ try{
+  const settings=await invoke("get_proxy_settings");
+  if(update===proxyBadgeUpdate){
+   proxyEnabled=settings.enabled;
+   $("proxyBadge").hidden=!(proxyEnabled&&download.proxy_used&&download.status==="downloading");
+  }
+ }catch(error){
+  if(update===proxyBadgeUpdate)$("proxyBadge").hidden=true;
+  console.warn("Could not refresh proxy indicator:",error);
+ }
+}
 function render(download){
  document.title=`${download.name} - Irani IDM`;
  $("name").textContent=download.name;
  $("url").textContent=download.url;
+ updateProxyBadge(download);
  const percent=download.total?Math.min(100,download.downloaded/download.total*100):(download.status==="completed"?100:0);
  $("overallBar").style.width=percent+"%";
  $("overallPct").textContent=nf(percent)+"%";
@@ -207,6 +236,10 @@ listen("downloads",event=>{
  const download=event.payload.find(item=>item.id===id);
  if(download)render(download);
  else showError("Download not found.");
+}).catch(error=>showError(String(error)));
+listen("proxy-settings-changed",event=>{
+ proxyEnabled=Boolean(event.payload);
+ $("proxyBadge").hidden=!(proxyEnabled&&currentDownload?.proxy_used&&currentDownload?.status==="downloading");
 }).catch(error=>showError(String(error)));
 invoke("download_view",{id}).then(render).catch(error=>showError(String(error)));
 </script>
