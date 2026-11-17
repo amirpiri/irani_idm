@@ -92,6 +92,8 @@ jobs:
     needs: build
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -99,9 +101,13 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Prepare release notes from changelog
+        run: bash .github/scripts/extract-changelog.sh
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           name: Irani IDM ${{ github.ref_name }}
+          body_path: release-notes.md
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: release-assets/**/*

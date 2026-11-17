@@ -11,7 +11,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
 - Right-click download menu for pause/resume, open, copy URL, details, and delete
 - Category groups, search, queue start/stop all
-- Day, night, and system appearance modes
+- Day, night, and system appearance modes with eleven color themes (Ocean, Violet, Emerald, Sunset, Rose, Arctic, Amber, Indigo, Mint, Coral, Graphite)
 - English + Persian UI (switch in Settings; RTL layout applied automatically)
 - Adjustable interface scale and font size
 - GitHub project shortcut and automatic latest-release checks with a download prompt
@@ -78,6 +78,13 @@ Build on each target OS (or use GitHub Actions with a windows + ubuntu matrix).
    (`irani-idm-Windows`: .msi, NSIS installer .exe, and portable ZIP;
    `irani-idm-Linux`: .deb + .rpm + .AppImage; `irani-idm-macOS`: .dmg).
 4. To publish a desktop release: `git tag v1.0.3 && git push origin main v1.0.3` — the desktop installers, macOS disk image, and Windows portable ZIP are attached to a GitHub Release automatically.
+
+## Changelog and GitHub releases
+Add user-facing changes under `## [Unreleased]` in `CHANGELOG.md` as you work.
+Before creating a version tag, move those notes into a matching version section
+(for example, `## [1.0.4]`) and leave a fresh `## [Unreleased]` section above it.
+The release workflow publishes that version's section as the GitHub Release
+description. If a matching version section is missing, it uses `Unreleased`.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is
