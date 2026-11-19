@@ -179,7 +179,22 @@ fn run_completion_action(action: String) -> Result<(), String> {
             Err(format!("systemctl {command} failed with status {status}"))
         }
     }
-    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    {
+        let Some((program, args)) = macos_completion_command(&action)? else {
+            return Ok(());
+        };
+        let status = std::process::Command::new(program)
+            .args(args)
+            .status()
+            .map_err(|error| format!("Could not start {program}: {error}"))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("{program} failed with status {status}"))
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
     {
         match action.as_str() {
             "none" => Ok(()),
@@ -191,7 +206,23 @@ fn run_completion_action(action: String) -> Result<(), String> {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "macos", test))]
+fn macos_completion_command(
+    action: &str,
+) -> Result<Option<(&'static str, &'static [&'static str])>, String> {
+    match action {
+        "none" => Ok(None),
+        // System Events requests a normal macOS shutdown and handles the logged-in session.
+        "shutdown" => Ok(Some((
+            "osascript",
+            &["-e", "tell application \"System Events\" to shut down"],
+        ))),
+        "sleep" => Ok(Some(("pmset", &["sleepnow"]))),
+        _ => Err("Unsupported download completion action".into()),
+    }
+}
+
+#[cfg(any(target_os = "linux", test))]
 fn linux_completion_command(action: &str) -> Result<Option<&'static str>, String> {
     match action {
         "none" => Ok(None),
@@ -726,7 +757,6 @@ mod tests {
         assert!(browser_install_guide_url("edge", "de").is_err());
     }
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn linux_completion_actions_map_to_systemctl_commands() {
         assert_eq!(super::linux_completion_command("none").unwrap(), None);
@@ -739,6 +769,23 @@ mod tests {
             Some("suspend")
         );
         assert!(super::linux_completion_command("invalid").is_err());
+    }
+
+    #[test]
+    fn macos_completion_actions_map_to_native_commands() {
+        assert_eq!(super::macos_completion_command("none").unwrap(), None);
+        assert_eq!(
+            super::macos_completion_command("shutdown").unwrap(),
+            Some((
+                "osascript",
+                &["-e", "tell application \"System Events\" to shut down"][..]
+            ))
+        );
+        assert_eq!(
+            super::macos_completion_command("sleep").unwrap(),
+            Some(("pmset", &["sleepnow"][..]))
+        );
+        assert!(super::macos_completion_command("invalid").is_err());
     }
 
     #[test]

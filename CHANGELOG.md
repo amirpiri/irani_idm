@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0]
+
+### Added
+- Add native macOS support for shutting down or sleeping after downloads finish.
+
+### Fixed
+- Route macOS completion actions through `System Events` and `pmset` while preserving existing Windows and Linux behavior.
+
 ## [1.9.0]
 
 ### Added
