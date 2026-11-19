@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0]
+
+### Added
+- Configure the app to shut down or sleep after all active downloads finish.
+- Adjust window transparency from the appearance settings.
+
+### Fixed
+- Prevent duplicate IP geolocation lookups while a request is pending and allow retries after failures.
+
 ## [1.4.0]
 
 ### Added

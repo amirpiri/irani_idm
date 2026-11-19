@@ -4,13 +4,71 @@ use engine::{Manager, ProxySettings};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashMap,
+    collections::HashSet,
     path::{Path, PathBuf},
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 use tauri::{Emitter, Manager as _, State};
 
+#[cfg(target_os = "windows")]
+#[link(name = "PowrProf")]
+extern "system" {
+    fn SetSuspendState(hibernate: u8, force_critical: u8, disable_wake_event: u8) -> u8;
+}
+
 const PROJECT_URL: &str = "https://github.com/amirpiri/irani_idm";
 const LATEST_RELEASE_API: &str = "https://api.github.com/repos/amirpiri/irani_idm/releases/latest";
+
+#[derive(Clone)]
+struct CompletionActionState(Arc<Mutex<String>>);
+
+#[derive(Default)]
+struct CompletionTracker {
+    known_ids: HashSet<u64>,
+    pending_ids: HashSet<u64>,
+    batch_had_success: bool,
+}
+
+impl CompletionTracker {
+    fn seed<'a>(&mut self, downloads: impl IntoIterator<Item = (u64, &'a str)>) {
+        for (id, status) in downloads {
+            self.known_ids.insert(id);
+            if matches!(status, "preparing" | "downloading") {
+                self.pending_ids.insert(id);
+            }
+        }
+    }
+
+    fn observe<'a>(&mut self, downloads: impl IntoIterator<Item = (u64, &'a str)>) -> bool {
+        let statuses: HashMap<u64, &str> = downloads.into_iter().collect();
+
+        for (&id, &status) in &statuses {
+            let is_new = self.known_ids.insert(id);
+            if is_new || matches!(status, "preparing" | "downloading") {
+                self.pending_ids.insert(id);
+            }
+        }
+
+        let finished: Vec<u64> = self.pending_ids.iter().copied().filter(|id| {
+            matches!(statuses.get(id), Some(&"completed") | Some(&"error"))
+                || !statuses.contains_key(id)
+        }).collect();
+        for id in finished {
+            if statuses.get(&id) == Some(&"completed") {
+                self.batch_had_success = true;
+            }
+            self.pending_ids.remove(&id);
+        }
+
+        if self.pending_ids.is_empty() && self.batch_had_success {
+            self.batch_had_success = false;
+            return true;
+        }
+        false
+    }
+}
 
 #[derive(Deserialize)]
 struct GitHubRelease {
@@ -52,6 +110,46 @@ fn open_release_page(url: String) -> Result<(), String> {
 #[tauri::command]
 fn app_version(app: tauri::AppHandle) -> String {
     app.package_info().version.to_string()
+}
+
+#[tauri::command]
+fn run_completion_action(action: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        match action.as_str() {
+            "shutdown" => std::process::Command::new("shutdown.exe")
+                .args(["/s", "/t", "0"])
+                .spawn()
+                .map(|_| ())
+                .map_err(|error| format!("Could not start shutdown: {error}")),
+            "sleep" => {
+                // SetSuspendState is a Win32 API, not a rundll32 entry point.
+                // Call it directly to use its actual Windows function signature.
+                let result = unsafe { SetSuspendState(0, 0, 0) };
+                if result == 0 {
+                    Err("Windows could not enter sleep mode".into())
+                } else {
+                    Ok(())
+                }
+            }
+            "none" => Ok(()),
+            _ => return Err("Unsupported download completion action".into()),
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = action;
+        Err("Download completion actions are currently supported on Windows only".into())
+    }
+}
+
+#[tauri::command]
+fn set_completion_action(state: State<CompletionActionState>, action: String) -> Result<(), String> {
+    if !["none", "shutdown", "sleep"].contains(&action.as_str()) {
+        return Err("Unsupported download completion action".into());
+    }
+    *state.0.lock().map_err(|_| "Completion action settings are unavailable")? = action;
+    Ok(())
 }
 
 #[tauri::command]
@@ -282,14 +380,36 @@ pub fn run() {
             std::fs::create_dir_all(&dir)?;
             let mgr = Manager::load(&dir);
             app.manage(mgr.clone());
+            let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
+            app.manage(completion_action.clone());
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let (mut last, mut ticks) = (Instant::now(), 0u32);
+                // Seed persisted history so it is not mistaken for new work,
+                // while enrolling any downloads already active at startup.
+                let initial_downloads = mgr.views(0.5);
+                let mut completion_tracker = CompletionTracker::default();
+                completion_tracker.seed(initial_downloads.iter()
+                    .map(|download| (download.id, download.status)));
                 loop {
                     tokio::time::sleep(Duration::from_millis(500)).await;
                     let dt = last.elapsed().as_secs_f64();
                     last = Instant::now();
-                    let _ = handle.emit("downloads", mgr.views(dt));
+                    let downloads = mgr.views(dt);
+                    let should_run_action = completion_tracker.observe(downloads.iter()
+                        .map(|download| (download.id, download.status)));
+                    if should_run_action {
+                        let action = completion_action.0.lock()
+                            .map(|value| value.clone())
+                            .unwrap_or_else(|_| "none".into());
+                        if action != "none" {
+                            if let Err(error) = run_completion_action(action) {
+                                eprintln!("Download completion action failed: {error}");
+                                let _ = handle.emit("completion-action-error", error);
+                            }
+                        }
+                    }
+                    let _ = handle.emit("downloads", downloads);
                     ticks += 1;
                     if ticks % 10 == 0 {
                         mgr.save();
@@ -302,6 +422,8 @@ pub fn run() {
             open_project_page,
             open_release_page,
             app_version,
+            run_completion_action,
+            set_completion_action,
             check_for_update,
             add_download,
             pause,
@@ -324,7 +446,7 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::release_version;
+    use super::{release_version, CompletionTracker};
 
     #[test]
     fn release_versions_accept_v_prefix_and_compare_semantically() {
@@ -335,5 +457,39 @@ mod tests {
     #[test]
     fn release_versions_reject_invalid_tags() {
         assert!(release_version("release-next").is_err());
+    }
+
+    #[test]
+    fn paused_download_history_does_not_block_a_new_batch() {
+        let mut tracker = CompletionTracker::default();
+        tracker.seed([(1, "paused"), (2, "completed")]);
+
+        assert!(tracker.observe([(1, "paused"), (2, "completed"), (3, "completed")]));
+    }
+
+    #[test]
+    fn waits_for_every_download_in_the_active_batch() {
+        let mut tracker = CompletionTracker::default();
+
+        assert!(!tracker.observe([(10, "downloading")]));
+        assert!(!tracker.observe([(10, "completed"), (11, "downloading")]));
+        assert!(tracker.observe([(10, "completed"), (11, "completed")]));
+        assert!(!tracker.observe([(10, "completed"), (11, "completed")]));
+    }
+
+    #[test]
+    fn observes_a_download_that_finishes_between_monitor_ticks() {
+        let mut tracker = CompletionTracker::default();
+        tracker.seed([]);
+
+        assert!(tracker.observe([(20, "completed")]));
+    }
+
+    #[test]
+    fn failed_batch_does_not_run_the_completion_action() {
+        let mut tracker = CompletionTracker::default();
+
+        assert!(!tracker.observe([(30, "downloading")]));
+        assert!(!tracker.observe([(30, "error")]));
     }
 }

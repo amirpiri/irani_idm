@@ -8,7 +8,7 @@
 @font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 @font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-SemiBold.woff2") format("woff2");font-style:normal;font-weight:600;font-display:swap}
 @font-face{font-family:Vazirmatn;src:url("assets/fonts/Vazirmatn-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap}
-:root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33}
+:root{color-scheme:light;--bg:#eef2f7;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#d9e0e8;--ac:#2b7de9;--sel:#bcd5f7;--ok:#22a45d;--er:#d33;--window-opacity:100%;--bg-glass:color-mix(in srgb,var(--bg) var(--window-opacity),transparent);--card-glass:color-mix(in srgb,var(--card) var(--window-opacity),transparent);--sel-glass:color-mix(in srgb,var(--sel) var(--window-opacity),transparent)}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#1b2027;--card:#252c35;--tx:#e6ebf1;--mut:#98a3b0;--bd:#37414d;--ac:#4a97ff;--sel:#2b4466;--ok:#22a45d;--er:#e45555}
 :root[data-palette="violet"]{--bg:#f3effb;--card:#fff;--tx:#29213c;--mut:#776b8d;--bd:#e2d9f0;--ac:#8254d7;--sel:#e5d8fb}
 :root[data-theme="dark"][data-palette="violet"]{--bg:#201b2c;--card:#2d253d;--tx:#f0eafa;--mut:#b2a4c9;--bd:#47395d;--ac:#b18af4;--sel:#49366a}
@@ -33,50 +33,50 @@
 :root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{zoom:var(--app-scale);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;user-select:none}
+body{zoom:var(--app-scale);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg-glass);color:var(--tx);display:flex;flex-direction:column;user-select:none}
 button,input,select,textarea{font:inherit;color:inherit}
-#bar{display:flex;gap:2px;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+#bar{display:flex;gap:2px;padding:8px 10px;background:var(--card-glass);border-bottom:1px solid var(--bd);flex-wrap:wrap}
 .tb{background:none;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
-.tb:hover{background:var(--bg)}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
+.tb:hover{background:var(--bg-glass)}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
 .sep{width:1px;background:var(--bd);margin:4px 6px}
 #main{flex:1;display:flex;min-height:0}
 #appVersion{padding:4px 12px;color:var(--mut);font-size:.8em;text-align:end;direction:ltr;user-select:text}
-#side{width:200px;background:var(--card);border-inline-start:1px solid var(--bd);padding:8px;overflow:auto;order:2}
+#side{width:200px;background:var(--card-glass);border-inline-start:1px solid var(--bd);padding:8px;overflow:auto;order:2}
 #side h4{margin:4px 8px 8px}
 .cat{padding:7px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between}
-.cat:hover{background:var(--bg)}.cat.on{background:var(--sel)}
+.cat:hover{background:var(--bg-glass)}.cat.on{background:var(--sel-glass)}
 #content{flex:1;display:flex;flex-direction:column;padding:10px;gap:10px;min-width:0;order:1}
 #top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.stat{background:var(--card);padding:10px 16px;border-radius:12px;font-weight:600}
-#q{flex:1;min-width:160px;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);user-select:text}
-#tw{flex:1;overflow:auto;background:var(--card);border-radius:12px;border:1px solid var(--bd)}
+.stat{background:var(--card-glass);padding:10px 16px;border-radius:12px;font-weight:600}
+#q{flex:1;min-width:160px;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card-glass);user-select:text}
+#tw{flex:1;overflow:auto;background:var(--card-glass);border-radius:12px;border:1px solid var(--bd)}
 table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse}
-th{position:sticky;top:0;background:var(--card);text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd);font-weight:600}
+th{position:sticky;top:0;background:var(--card-glass);text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd);font-weight:600}
 td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td:nth-child(5),td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
-tr.r{cursor:default}tr.r.sel{background:var(--sel)}
+tr.r{cursor:default}tr.r.sel{background:var(--sel-glass)}
 td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
-.pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
+.pb{height:16px;background:var(--bg-glass);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
 .pb b{position:absolute;inset:0;text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px}
 .proxy-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:7px;padding:1px 6px;border:1px solid color-mix(in srgb,var(--ok) 45%,var(--bd));border-radius:999px;background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--ok);font-size:.78em;font-weight:600;vertical-align:middle}
 .proxy-badge[hidden]{display:none!important}
-dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);padding:16px;width:min(620px,94vw);max-height:90vh;overflow-y:auto}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card-glass);color:var(--tx);padding:16px;width:min(620px,94vw);max-height:90vh;overflow-y:auto}
 dialog::backdrop{background:#0006}
 dialog h3{margin:0 0 10px}
 .settings-tabs{display:flex;gap:6px;padding:4px;margin-bottom:12px;border-bottom:1px solid var(--bd)}
 .settings-tab{flex:1;padding:9px 12px;border:0;border-bottom:2px solid transparent;border-radius:7px 7px 0 0;background:transparent;color:var(--mut);cursor:pointer}
-.settings-tab:hover{background:var(--bg);color:var(--tx)}
-.settings-tab[aria-selected="true"]{border-bottom-color:var(--ac);background:var(--sel);color:var(--tx);font-weight:600}
+.settings-tab:hover{background:var(--bg-glass);color:var(--tx)}
+.settings-tab[aria-selected="true"]{border-bottom-color:var(--ac);background:var(--sel-glass);color:var(--tx);font-weight:600}
 .settings-panel[hidden]{display:none}
 .settings-panel{min-height:300px}
 .settings-panel .fld:first-child{margin-top:0}
 .row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}.row span:first-child{color:var(--mut)}
 .url{direction:ltr;text-align:start;word-break:break-all;font-size:calc(var(--app-font-size)*.857);user-select:text;margin-bottom:8px}
-textarea{width:100%;height:110px;direction:ltr;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
-input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+textarea{width:100%;height:110px;direction:ltr;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg-glass)}
+input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg-glass)}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.btn{padding:7px 16px;border-radius:8px;border:1px solid var(--bd);background:var(--card);cursor:pointer}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn{padding:7px 16px;border-radius:8px;border:1px solid var(--bd);background:var(--card-glass);cursor:pointer}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
 .sg{max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-top:8px}
 .sg td,.sg th{padding:3px 8px}
 .fld{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
@@ -89,10 +89,10 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 .fld.dir{justify-content:initial}.fld.dir input{min-width:0}
 .palette-heading{font-weight:600;margin:14px 0 9px}
 .palette-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
-.palette-option{position:relative;display:flex;align-items:center;gap:8px;min-width:0;min-height:43px;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--card);cursor:pointer;text-align:start;transition:border-color .15s,background .15s,transform .15s}
+.palette-option{position:relative;display:flex;align-items:center;gap:8px;min-width:0;min-height:43px;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--card-glass);cursor:pointer;text-align:start;transition:border-color .15s,background .15s,transform .15s}
 .palette-option:hover{border-color:var(--ac);transform:translateY(-1px)}
 .palette-option:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.palette-option[aria-pressed="true"]{border:2px solid var(--ac);padding:7px;background:var(--sel)}
+.palette-option[aria-pressed="true"]{border:2px solid var(--ac);padding:7px;background:var(--sel-glass)}
 .palette-option[aria-pressed="true"]::after{content:"✓";margin-inline-start:auto;color:var(--ac);font-size:.9em;font-weight:700}
 .palette-dot{width:22px;height:22px;flex:0 0 22px;border-radius:7px;background:var(--swatch);box-shadow:inset 0 0 0 1px #0001}
 .palette-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.88em}
@@ -100,10 +100,10 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 @media(prefers-reduced-motion:reduce){.palette-option{transition:none}}
 .fld.range input[type=range]{flex:1;min-width:100px;padding:0;accent-color:var(--ac)}
 .fld.range output{min-width:48px;text-align:end;color:var(--mut);direction:ltr}
-#rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card);color:var(--tx);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
+#rowMenu{position:fixed;z-index:10;min-width:210px;padding:5px;background:var(--card-glass);color:var(--tx);font:var(--app-font-size) "Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;border:1px solid var(--bd);border-radius:9px;box-shadow:0 6px 20px #0003}
 #rowMenu[hidden]{display:none}
 #rowMenu button{display:block;width:100%;padding:8px 12px;border:0;border-radius:5px;background:transparent;text-align:start;cursor:pointer}
-#rowMenu button:hover:not(:disabled){background:var(--bg)}
+#rowMenu button:hover:not(:disabled){background:var(--bg-glass)}
 #rowMenu button:disabled{opacity:.5;cursor:default}
 .menu-sep{height:1px;margin:4px 5px;background:var(--bd)}
 </style>
@@ -151,6 +151,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <section class="settings-panel" id="settingsGeneral" role="tabpanel" aria-labelledby="settingsTabGeneral">
     <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option></select></div>
     <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
+    <div class="fld"><label for="sCompletionAction" data-i="completionAction"></label><select id="sCompletionAction"><option value="none" data-i="actionNone"></option><option value="shutdown" data-i="actionShutdown"></option><option value="sleep" data-i="actionSleep"></option></select></div>
     <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
   </section>
   <section class="settings-panel" id="settingsAppearance" role="tabpanel" aria-labelledby="settingsTabAppearance" hidden>
@@ -159,6 +160,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
     <div id="paletteGrid" class="palette-grid" role="group" aria-label="Color theme"></div>
     <div class="fld range"><label for="sScale" data-i="uiScale"></label><input id="sScale" type="range" min="80" max="120" step="5"><output id="sScaleValue" for="sScale"></output></div>
     <div class="fld range"><label for="sFontSize" data-i="fontSize"></label><input id="sFontSize" type="range" min="12" max="18" step="1"><output id="sFontSizeValue" for="sFontSize"></output></div>
+    <div class="fld range"><label for="sTransparency" data-i="transparency"></label><input id="sTransparency" type="range" min="30" max="100" step="5"><output id="sTransparencyValue" for="sTransparency"></output></div>
   </section>
   <section class="settings-panel" id="settingsProxy" role="tabpanel" aria-labelledby="settingsTabProxy" hidden>
     <div class="fld"><label for="sProxyEnabled" data-i="proxyEnabled"></label><input id="sProxyEnabled" class="switch" type="checkbox" role="switch" aria-label="Enable proxy for downloads"></div>
@@ -208,7 +210,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
+en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
@@ -216,7 +218,7 @@ en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop al
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
+fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -227,7 +229,7 @@ fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAl
 const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx xls xlsx ppt pptx txt epub odt",music:"mp3 flac wav aac ogg m4a",
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
-let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
+let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en"), completionAction=["none","shutdown","sleep"].includes(localStorage.completionAction)?localStorage.completionAction:"none";
 let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="", appVersion=null;
 const readDisplaySetting=(key,min,max,fallback)=>{
  const stored=localStorage.getItem(key);
@@ -235,7 +237,7 @@ const readDisplaySetting=(key,min,max,fallback)=>{
  const value=Number(stored);
  return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;
 };
-let appScale=readDisplaySetting("appScale",80,120,100), appFontSize=readDisplaySetting("appFontSize",12,18,14);
+let appScale=readDisplaySetting("appScale",80,120,100), appFontSize=readDisplaySetting("appFontSize",12,18,14), windowOpacity=readDisplaySetting("windowOpacity",30,100,100);
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
 const PALETTES=[{id:"ocean",swatch:"linear-gradient(135deg,#2b7de9 0 50%,#55c6e8 50%)"},{id:"violet",swatch:"linear-gradient(135deg,#8254d7 0 50%,#c4a5ff 50%)"},{id:"emerald",swatch:"linear-gradient(135deg,#16865b 0 50%,#72d5a4 50%)"},{id:"sunset",swatch:"linear-gradient(135deg,#e66b3d 0 50%,#ffc078 50%)"},{id:"rose",swatch:"linear-gradient(135deg,#d94e83 0 50%,#ffa9c7 50%)"},{id:"cyan",swatch:"linear-gradient(135deg,#078ba8 0 50%,#72dce9 50%)"},{id:"amber",swatch:"linear-gradient(135deg,#bd821b 0 50%,#f2d17b 50%)"},{id:"indigo",swatch:"linear-gradient(135deg,#5865d9 0 50%,#a5adff 50%)"},{id:"mint",swatch:"linear-gradient(135deg,#159b83 0 50%,#8be0c8 50%)"},{id:"coral",swatch:"linear-gradient(135deg,#ed6658 0 50%,#ffb2a4 50%)"},{id:"graphite",swatch:"linear-gradient(135deg,#566474 0 50%,#b5c0cc 50%)"}];
 let colorTheme=PALETTES.some(p=>p.id===localStorage.colorTheme)?localStorage.colorTheme:"ocean";
@@ -243,6 +245,7 @@ const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
 function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-scale",String(appScale/100));
  document.documentElement.style.setProperty("--app-font-size",appFontSize+"px");
+ document.documentElement.style.setProperty("--window-opacity",windowOpacity+"%");
 }
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
@@ -263,6 +266,7 @@ window.addEventListener("storage",event=>{
  if(event.key==="appScale"||event.key==="appFontSize"){
   appScale=readDisplaySetting("appScale",80,120,100);appFontSize=readDisplaySetting("appFontSize",12,18,14);applyDisplaySettings();
  }
+ if(event.key==="windowOpacity"){windowOpacity=readDisplaySetting("windowOpacity",30,100,100);applyDisplaySettings()}
 });
 const nf=(n,d=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:d}).format(n);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -356,9 +360,10 @@ async function doAdd(){
  }
 }
 async function openSet(){
- $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;
+ $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;$("sCompletionAction").value=completionAction;
  $("sScale").value=appScale;$("sScaleValue").textContent=appScale+"%";
  $("sFontSize").value=appFontSize;$("sFontSizeValue").textContent=appFontSize+" px";
+ $("sTransparency").value=windowOpacity;$("sTransparencyValue").textContent=(100-windowOpacity)+"%";
  $("proxyError").textContent="";
  try{
   const proxy=await invoke("get_proxy_settings");
@@ -409,11 +414,15 @@ async function saveSet(){
  const proxy={enabled:$("sProxyEnabled").checked,protocol:$("sProxyType").value,host:$("sProxyHost").value.trim(),port:Math.min(65535,Math.max(1,Number($("sProxyPort").value)||0)),username:$("sProxyUsername").value,password:$("sProxyPassword").value};
  try{await invoke("set_proxy_settings",{settings:proxy})}
  catch(error){$("proxyError").textContent=String(error);return}
- lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();
+ const nextCompletionAction=["none","shutdown","sleep"].includes($("sCompletionAction").value)?$("sCompletionAction").value:"none";
+ try{await invoke("set_completion_action",{action:nextCompletionAction})}
+ catch(error){$("proxyError").textContent=String(error);return}
+ lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();completionAction=nextCompletionAction;
  appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
  appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
- localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;
- localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;
+ windowOpacity=Math.min(100,Math.max(30,Number($("sTransparency").value)||100));
+ localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;localStorage.completionAction=completionAction;
+ localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;localStorage.windowOpacity=windowOpacity;
  $("dSet").close();applyTheme();applyLang();applyDisplaySettings()}
 $("sProxyEnabled").addEventListener("change",applyProxySettings);
 async function openProjectPage(){
@@ -437,6 +446,7 @@ async function openUpdatePage(){
 $("sScale").addEventListener("input",event=>{$("sScaleValue").textContent=event.target.value+"%"});
 $("paletteGrid").addEventListener("click",event=>{const option=event.target.closest("[data-palette]");if(option)choosePalette(option.dataset.palette)});
 $("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
+$("sTransparency").addEventListener("input",event=>{windowOpacity=Number(event.target.value);$("sTransparencyValue").textContent=(100-windowOpacity)+"%";applyDisplaySettings();localStorage.windowOpacity=windowOpacity});
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
 $("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});
 document.documentElement.append($("rowMenu"));
@@ -459,6 +469,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")hideRowMenu()});
 window.addEventListener("blur",hideRowMenu);
 $("cats").addEventListener("click",e=>{const c=e.target.closest(".cat");if(c){cat=c.dataset.c;render()}});
 const activeDownloadWindows=new Set();
+invoke("set_completion_action",{action:completionAction}).catch(error=>console.error("Could not restore download completion action:",error));
+listen("completion-action-error",event=>alert("Could not run the download completion action: "+event.payload));
 listen("downloads",e=>{
  data=e.payload;render();
  const downloadIds=new Set(data.map(d=>d.id));

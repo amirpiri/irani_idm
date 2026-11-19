@@ -49,6 +49,7 @@ struct Item {
     server_ip: Option<String>,
     server_country: Option<String>,
     server_country_code: Option<String>,
+    location_lookup_pending: bool,
     path: PathBuf,
     total: Option<u64>,
     resumable: bool,
@@ -173,7 +174,7 @@ pub struct View {
     downloaded: u64,
     speed: u64,
     eta: Option<u64>,
-    status: &'static str,
+    pub status: &'static str,
     proxy_used: bool,
     error: Option<String>,
     resumable: bool,
@@ -281,6 +282,7 @@ impl Manager {
                     server_ip: s.server_ip,
                     server_country: s.server_country,
                     server_country_code: s.server_country_code,
+                    location_lookup_pending: false,
                     proxy_used: s.proxy_used,
                     restart_after_cancel: false,
                     file_created: s.file_created,
@@ -475,6 +477,7 @@ impl Manager {
                     server_ip: None,
                     server_country: None,
                     server_country_code: None,
+                    location_lookup_pending: false,
                     path: dir.join(name),
                     total: None,
                     resumable: false,
@@ -718,12 +721,15 @@ impl Manager {
                     && item.server_country_code.is_some()
                 {
                     false
+                } else if same_ip && item.location_lookup_pending {
+                    false
                 } else {
                     item.server_ip = Some(ip.clone());
                     if !same_ip {
                         item.server_country = None;
                         item.server_country_code = None;
                     }
+                    item.location_lookup_pending = true;
                     true
                 }
             } else {
@@ -758,6 +764,7 @@ impl Manager {
             Ok(response) => response,
             Err(error) => {
                 eprintln!("IP geolocation request failed for {ip}: {error}");
+                self.finish_location_lookup(id, &ip, None, None);
                 return;
             }
         };
@@ -765,18 +772,31 @@ impl Manager {
             Ok(location) => location,
             Err(error) => {
                 eprintln!("Could not parse IP geolocation response for {ip}: {error}");
+                self.finish_location_lookup(id, &ip, None, None);
                 return;
             }
         };
         if !location.success {
             eprintln!("IP geolocation service returned no location for {ip}");
+            self.finish_location_lookup(id, &ip, None, None);
             return;
         }
+        self.finish_location_lookup(id, &ip, location.country, location.country_code);
+    }
+
+    fn finish_location_lookup(
+        &self,
+        id: u64,
+        ip: &str,
+        country: Option<String>,
+        country_code: Option<String>,
+    ) {
         let mut items = self.items.lock().unwrap();
         let Some(item) = items.get_mut(&id) else { return };
-        if item.server_ip.as_deref() == Some(&ip) {
-            item.server_country = location.country;
-            item.server_country_code = location.country_code;
+        if item.server_ip.as_deref() == Some(ip) {
+            item.location_lookup_pending = false;
+            item.server_country = country;
+            item.server_country_code = country_code;
             drop(items);
             self.save();
         }
@@ -1315,6 +1335,7 @@ mod tests {
                 server_ip: None,
                 server_country: None,
                 server_country_code: None,
+                location_lookup_pending: false,
                 path: path.clone(),
                 total: Some(8),
                 resumable: true,

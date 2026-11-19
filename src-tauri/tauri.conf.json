@@ -1,12 +1,12 @@
 {
   "productName": "Irani IDM",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "identifier": "com.iranidm.desktop",
   "build": { "frontendDist": "../ui" },
   "app": {
     "withGlobalTauri": true,
     "windows": [
-      { "label": "main", "title": "Irani IDM", "width": 1440, "height": 900, "minWidth": 960, "minHeight": 600, "visible": false }
+      { "label": "main", "title": "Irani IDM", "width": 1440, "height": 900, "minWidth": 960, "minHeight": 600, "visible": false, "transparent": true }
     ],
     "security": { "csp": null }
   },
