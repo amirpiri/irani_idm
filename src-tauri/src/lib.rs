@@ -94,6 +94,25 @@ fn open_project_page() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_browser_install_guide(browser: String, language: String) -> Result<(), String> {
+    let guide_url = browser_install_guide_url(&browser, &language)?;
+    open::that(guide_url)
+        .map_err(|error| format!("Could not open the installation guide: {error}"))
+}
+
+fn browser_install_guide_url(browser: &str, language: &str) -> Result<String, String> {
+    if !["chrome", "edge", "firefox"].contains(&browser) {
+        return Err("Unsupported browser".into());
+    }
+    if !["en", "fa"].contains(&language) {
+        return Err("Unsupported guide language".into());
+    }
+    Ok(format!(
+        "{PROJECT_URL}/blob/main/docs/extensions/{browser}/README.{language}.md"
+    ))
+}
+
+#[tauri::command]
 fn open_release_page(url: String) -> Result<(), String> {
     let parsed = url::Url::parse(&url).map_err(|error| error.to_string())?;
     if parsed.scheme() != "https"
@@ -479,6 +498,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             open_project_page,
+            open_browser_install_guide,
             open_release_page,
             app_version,
             run_completion_action,
@@ -505,7 +525,21 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{release_version, CompletionTracker};
+    use super::{browser_install_guide_url, release_version, CompletionTracker};
+
+    #[test]
+    fn browser_install_guide_uses_the_selected_browser_and_language() {
+        assert_eq!(
+            browser_install_guide_url("chrome", "fa").unwrap(),
+            "https://github.com/amirpiri/irani_idm/blob/main/docs/extensions/chrome/README.fa.md"
+        );
+        assert_eq!(
+            browser_install_guide_url("firefox", "en").unwrap(),
+            "https://github.com/amirpiri/irani_idm/blob/main/docs/extensions/firefox/README.en.md"
+        );
+        assert!(browser_install_guide_url("unknown", "en").is_err());
+        assert!(browser_install_guide_url("edge", "de").is_err());
+    }
 
     #[test]
     fn release_versions_accept_v_prefix_and_compare_semantically() {

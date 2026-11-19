@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Irani IDM — Browser integration</title>
+  <style>
+    :root { color-scheme: light dark; font: 14px/1.4 system-ui, sans-serif; }
+    body { margin: 0; padding: 22px 20px; background: Canvas; color: CanvasText; }
+    main { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 8px; }
+    main > p { margin: 8px 0 12px; }
+    .notice { padding: 12px 14px; border: 1px solid GrayText; border-radius: 10px; }
+    .notice p { margin: 6px 0 10px; }
+    label { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0; }
+    input { width: 20px; height: 20px; flex: 0 0 auto; }
+    button { padding: 10px 18px; border: 0; border-radius: 7px; background: #176bba; color: white; font: inherit; cursor: pointer; }
+    #status { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Irani IDM — Browser integration</h1>
+    <p>Choose whether this extension may transfer your browser download URLs to the Irani IDM desktop application.</p>
+    <section class="notice" aria-label="Data transfer details">
+      <strong>What will be transferred?</strong>
+      <p>When you start an HTTP or HTTPS download, the extension sends its complete URL (including query parameters) to the Irani IDM desktop application on this computer using the local <code>iranidm://</code> protocol. URLs can contain account identifiers or temporary access tokens.</p>
+      <strong>What happens next?</strong>
+      <p>Irani IDM saves the URL in its local download history (<code>downloads.json</code>) so it can restore downloads after a restart. The app requests the file from the URL's website, or through the proxy you configured. To show the server's country, the app may send that server's IP address (not the download URL) to <code>ipwho.is</code>.</p>
+      <strong>Who receives the information?</strong>
+      <p>The URL goes to Irani IDM on this device and then to the file host (and your configured proxy, if any) for the download. The extension publisher does not receive your download URLs. The extension does not use analytics or inspect page contents, cookies, passwords, or unrelated browsing history.</p>
+      <strong>What happens if you decline?</strong>
+      <p>Your browser downloads continue normally and are not handed to Irani IDM by this extension. You can change this setting at any time from the extension's Options page.</p>
+    </section>
+    <label>
+      <input id="consent" type="checkbox">
+      <span>I understand and agree that this extension may transfer the URLs of my browser downloads to the Irani IDM desktop application on this device.</span>
+    </label>
+    <button id="save" type="button">Save preference</button>
+    <button id="decline" type="button" hidden>Decline and continue to uninstall</button>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p><a href="https://github.com/amirpiri/irani_idm/issues" target="_blank" rel="noreferrer">Support and privacy questions</a></p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

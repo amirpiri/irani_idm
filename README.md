@@ -7,15 +7,19 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Multi-segment downloads (default 8 connections, up to 32) with HTTP Range
 - Add downloads immediately while metadata is prepared in the background; probes get up to 15 seconds before falling back to a single-connection download
 - Pause / resume (also after restarting the app), auto-retry, stall timeout
+- Restore the main window's size and maximized state when the app is reopened
 - Per-download speed limit, live speed / ETA, active connections and speed in the download list
+- Download details show the server's country and flag, whether the server supports resuming, and live connection-part progress; the expanded/collapsed state is remembered per download
 - Application-wide HTTP and SOCKS5 proxy support for downloads, with optional username/password authentication
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
 - Right-click download menu for pause/resume, open, copy URL, details, and delete
 - Category groups, search, queue start/stop all
+- Choose an action to run after all downloads finish: shut down the computer, put it to sleep, or do nothing
 - Day, night, and system appearance modes with eleven color themes (Ocean, Violet, Emerald, Sunset, Rose, Arctic, Amber, Indigo, Mint, Coral, Graphite)
+- Adjustable window transparency
 - English + Persian UI (switch in Settings; RTL layout applied automatically)
 - Adjustable interface scale and font size
-- GitHub project shortcut and automatic latest-release checks with a download prompt
+- Application version display, GitHub project shortcut, and automatic latest-release checks with a download prompt
 - Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
 - Browser integration that sends HTTP/HTTPS downloads to Irani IDM
 
@@ -88,15 +92,30 @@ Before creating a version tag, move those notes into a matching version section
 The release workflow publishes that version's section as the GitHub Release
 description. If a matching version section is missing, it uses `Unreleased`.
 
-## Browser integration (Chrome / Edge)
+## Browser integration (Chrome / Edge / Firefox)
 
 1. Install Irani IDM and launch it once so Windows can register the `iranidm://` URL handler (this also works with the portable build).
-2. Open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, and choose **Load unpacked**.
-3. Select the repository's `browser-extension` folder.
-4. If the extension was already loaded, click its **Reload** button after updating the files. Refresh any pages where you want to use it.
-5. When prompted, allow the browser to open Irani IDM for `iranidm://` links. Keep the tab open until the app starts.
+2. Open **Settings → General → Browser integration** and choose Chrome, Edge, or Firefox. The app opens the matching step-by-step guide in the language currently selected in Settings. The guides explain how to download the correct release ZIP, extract it, and load it in the browser.
+3. Chrome and Edge load the extracted extension folder with **Developer mode → Load unpacked**. Firefox 140 or later loads `manifest.json` through **Load Temporary Add-on…**; Firefox removes temporary add-ons when it closes. Permanent Firefox installation requires the signed AMO version after publication.
+4. After installation, review the extension's first-run consent page. Download handoff is disabled until the user explicitly enables it. Firefox additionally asks for its optional download-URL and download-action data permissions; handoff stays disabled if either is denied or revoked. Once enabled, HTTP/HTTPS downloads started in the browser are handed to Irani IDM and saved in the app's Downloads folder using its default eight connections. Turning handoff off leaves downloads in the browser. Links requiring an authenticated browser session, cookies, or browser-only headers may not be downloadable by the app.
 
-After setup, HTTP/HTTPS downloads started in the browser are handed to Irani IDM and saved in the app's Downloads folder using its default eight connections. The browser extension cancels the browser's copy before handing over the URL. Links requiring an authenticated browser session, cookies, or browser-only headers may not be downloadable by the app.
+The complete [English and Persian browser installation guides](docs/extensions/README.md) are also available directly in the repository.
+
+### Browser store publication
+
+The Chrome Web Store, Microsoft Edge Add-ons, and Firefox Add-ons listings are
+being prepared but are **not published yet**. Store publication requires the
+publisher's own enrolled developer account and approval from each store.
+Chrome Web Store developer registration currently requires a one-time $5 fee
+and is limited to Google's supported registration countries/regions (Iran is
+not currently listed). Microsoft Edge's extension developer registration has
+no registration fee;
+Firefox requires AMO developer registration and add-on review. The extension
+packages, privacy policy, listing descriptions, reviewer notes, and store
+graphics are maintained under `browser-extension/`. See
+[`STORE_LISTING.md`](browser-extension/STORE_LISTING.md) for preparation
+commands and the browser-specific listing files. Official store links will be
+added here after approval and publication.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is
@@ -105,5 +124,4 @@ preinstalled on most Windows 10/11 systems).
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.
 
 ## Ideas for next steps
-Scheduler, browser extension / clipboard capture, download queue concurrency limit,
-proxy + auth settings, YouTube/HLS support, system tray.
+Scheduler, download queue concurrency limit, YouTube/HLS support, system tray.

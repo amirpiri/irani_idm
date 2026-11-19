@@ -5,7 +5,23 @@ All notable changes to Irani IDM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0]
+
+### Added
+- Add step-by-step English and Persian installation guides for Chrome, Edge, and Firefox.
+- Add Firefox support for handing browser downloads to Irani IDM.
+- Add browser setup buttons for Firefox, Edge, and Chrome in application settings.
+- Prepare store submission packages and document extension privacy and store listing details.
+- Add an explicit first-run consent screen and opt-in control before transferring download URLs to Irani IDM.
+- Add Firefox's built-in optional data-collection consent, revocation handling, and decline-to-uninstall route.
+- Prepare separate Chrome, Edge, and Firefox listing copy, reviewer instructions, and store artwork.
+- Keep the desktop app's bundled browser-install flow in sync with the new Options page assets.
+
+### Changed
+- Open the selected browser's installation guide in the app's current language instead of copying extension files and showing a short installation alert.
+- Avoid writing full download URLs, which may contain private tokens, to the browser console.
+- Remove broad web-page content scripts; browser integration now uses the downloads and storage permissions only.
+- Disclose local download-history persistence and the desktop app's server-IP geolocation request in the browser privacy policy.
 
 ## [1.6.0]
 
