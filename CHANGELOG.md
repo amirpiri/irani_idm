@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0]
+
+### Fixed
+- Make a macOS tray icon left click restore the main window, matching Windows behavior; the tray menu remains available from the context click.
+
 ## [1.10.0]
 
 ### Added

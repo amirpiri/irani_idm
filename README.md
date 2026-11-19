@@ -7,6 +7,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Multi-segment downloads (default 8 connections, up to 32) with HTTP Range
 - Add downloads immediately while metadata is prepared in the background; probes get up to 15 seconds before falling back to a single-connection download
 - Pause / resume (also after restarting the app), auto-retry, stall timeout
+- System tray controls on Windows, Linux, and macOS; closing a window keeps the app running in the background
 - Restore the main window's size and maximized state when the app is reopened
 - Per-download speed limit, live speed / ETA, active connections and speed in the download list
 - Download details show the server's country and flag, whether the server supports resuming, and live connection-part progress; the expanded/collapsed state is remembered per download
@@ -124,4 +125,4 @@ preinstalled on most Windows 10/11 systems).
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.
 
 ## Ideas for next steps
-Scheduler, download queue concurrency limit, YouTube/HLS support, system tray.
+Scheduler, download queue concurrency limit, YouTube/HLS support.

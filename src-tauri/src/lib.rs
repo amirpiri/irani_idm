@@ -582,6 +582,9 @@ pub fn run() {
                 .map(|icon| Image::new_owned(icon.rgba().to_vec(), icon.width(), icon.height()));
             let mut tray = TrayIconBuilder::new()
                 .menu(&tray_menu)
+                // On macOS, Tauri otherwise opens the menu on a left click by default.
+                // Keep left click consistent with Windows: restore the main window.
+                .show_menu_on_left_click(false)
                 .tooltip("Irani IDM")
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "show" => {
