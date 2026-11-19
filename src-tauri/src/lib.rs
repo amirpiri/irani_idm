@@ -197,6 +197,39 @@ fn downloads_dir() -> Option<PathBuf> {
     dirs::download_dir().or_else(|| dirs::home_dir().map(|home| home.join("Downloads")))
 }
 
+fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), String> {
+    let link = url::Url::parse(raw_url).map_err(|error| error.to_string())?;
+    if link.scheme() != "iranidm" || link.host_str() != Some("download") {
+        return Err("Unsupported Irani IDM link".into());
+    }
+    let target = link.query_pairs()
+        .find(|(key, _)| key == "url")
+        .map(|(_, value)| value.into_owned())
+        .ok_or("Download link does not contain a URL")?;
+    let target_url = url::Url::parse(&target).map_err(|error| error.to_string())?;
+    if !["http", "https"].contains(&target_url.scheme()) || target_url.host_str().is_none() {
+        return Err("Only HTTP and HTTPS downloads are supported".into());
+    }
+
+    let manager = app.state::<Manager>();
+    let id = manager.add(
+        target_url.to_string(),
+        downloads_dir().ok_or("Could not find the Downloads folder")?,
+        8,
+    )?;
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(error) = open_download_window(app.clone(), app.state::<Manager>(), id).await {
+            eprintln!("Could not open download details: {error}");
+        }
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    });
+    Ok(())
+}
+
 fn migrate_download_history(old_data_dir: &Path, new_data_dir: &Path) -> std::io::Result<()> {
     let old_store = old_data_dir.join("downloads.json");
     let new_store = new_data_dir.join("downloads.json");
@@ -369,7 +402,15 @@ async fn test_proxy_settings(settings: ProxySettings) -> Result<String, String> 
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init());
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
@@ -382,6 +423,24 @@ pub fn run() {
             app.manage(mgr.clone());
             let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
             app.manage(completion_action.clone());
+            use tauri_plugin_deep_link::DeepLinkExt;
+            if let Some(urls) = app.deep_link().get_current()? {
+                for url in urls {
+                    if let Err(error) = handle_download_link(app.handle(), url.as_str()) {
+                        eprintln!("Rejected browser download link: {error}");
+                    }
+                }
+            }
+            let deep_link_app = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() {
+                    if let Err(error) = handle_download_link(&deep_link_app, url.as_str()) {
+                        eprintln!("Rejected browser download link: {error}");
+                    }
+                }
+            });
+            #[cfg(any(windows, target_os = "linux"))]
+            app.deep_link().register_all()?;
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let (mut last, mut ticks) = (Instant::now(), 0u32);

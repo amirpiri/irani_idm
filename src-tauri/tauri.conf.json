@@ -1,6 +1,6 @@
 {
   "productName": "Irani IDM",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "identifier": "com.iranidm.desktop",
   "build": { "frontendDist": "../ui" },
   "app": {
@@ -9,6 +9,11 @@
       { "label": "main", "title": "Irani IDM", "width": 1440, "height": 900, "minWidth": 960, "minHeight": 600, "visible": false, "transparent": true }
     ],
     "security": { "csp": null }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["iranidm"] }
+    }
   },
   "bundle": {
     "active": true,

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Irani IDM Browser Integration",
+  "version": "1.0.0",
+  "description": "Send browser downloads to Irani IDM.",
+  "permissions": ["downloads"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0]
+
+### Added
+- Capture browser downloads through the companion extension and start them in Irani IDM using the registered `iranidm://` link handler.
+- Preserve the browser's external-protocol handoff tab and launch explicit download links directly from the user's click.
+
 ## [1.5.0]
 
 ### Added

@@ -17,6 +17,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Adjustable interface scale and font size
 - GitHub project shortcut and automatic latest-release checks with a download prompt
 - Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
+- Browser integration that sends HTTP/HTTPS downloads to Irani IDM
 
 ## Screenshots
 
@@ -86,6 +87,16 @@ Before creating a version tag, move those notes into a matching version section
 (for example, `## [1.0.4]`) and leave a fresh `## [Unreleased]` section above it.
 The release workflow publishes that version's section as the GitHub Release
 description. If a matching version section is missing, it uses `Unreleased`.
+
+## Browser integration (Chrome / Edge)
+
+1. Install Irani IDM and launch it once so Windows can register the `iranidm://` URL handler (this also works with the portable build).
+2. Open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, and choose **Load unpacked**.
+3. Select the repository's `browser-extension` folder.
+4. If the extension was already loaded, click its **Reload** button after updating the files. Refresh any pages where you want to use it.
+5. When prompted, allow the browser to open Irani IDM for `iranidm://` links. Keep the tab open until the app starts.
+
+After setup, HTTP/HTTPS downloads started in the browser are handed to Irani IDM and saved in the app's Downloads folder using its default eight connections. The browser extension cancels the browser's copy before handing over the URL. Links requiring an authenticated browser session, cookies, or browser-only headers may not be downloadable by the app.
 
 The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
 without installing the app. Windows WebView2 Runtime is still required (it is
