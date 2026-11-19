@@ -145,6 +145,10 @@ const t=key=>words[lang][key]||key;
 Object.assign(words.en,{resumable:"Resume supported",yes:"Yes",no:"No"});
 Object.assign(words.fa,{resumable:"امکان ادامه دانلود",yes:"بله",no:"خیر"});
 const $=name=>document.getElementById(name);
+const partsSection=document.querySelector("details.section-title");
+const partsStateKey=`download-${id}-parts-open`;
+partsSection.open=localStorage.getItem(partsStateKey)==="true";
+partsSection.addEventListener("toggle",()=>localStorage.setItem(partsStateKey,String(partsSection.open)));
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
  document.documentElement.dataset.theme=theme;

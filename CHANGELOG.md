@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0]
+
+### Added
+- Remember whether each download's connection-parts section is expanded.
+
 ## [1.3.3]
 
 ### Added
