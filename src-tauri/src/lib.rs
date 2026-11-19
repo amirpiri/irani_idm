@@ -155,10 +155,40 @@ fn run_completion_action(action: String) -> Result<(), String> {
             _ => return Err("Unsupported download completion action".into()),
         }
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     {
-        let _ = action;
-        Err("Download completion actions are currently supported on Windows only".into())
+        let Some(command) = linux_completion_command(&action)? else {
+            return Ok(());
+        };
+        let status = std::process::Command::new("systemctl")
+            .arg(command)
+            .status()
+            .map_err(|error| format!("Could not start systemctl {command}: {error}"))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("systemctl {command} failed with status {status}"))
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        match action.as_str() {
+            "none" => Ok(()),
+            "shutdown" | "sleep" => {
+                Err("Download completion actions are not supported on this platform".into())
+            }
+            _ => Err("Unsupported download completion action".into()),
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn linux_completion_command(action: &str) -> Result<Option<&'static str>, String> {
+    match action {
+        "none" => Ok(None),
+        "shutdown" => Ok(Some("poweroff")),
+        "sleep" => Ok(Some("suspend")),
+        _ => Err("Unsupported download completion action".into()),
     }
 }
 
@@ -539,6 +569,21 @@ mod tests {
         );
         assert!(browser_install_guide_url("unknown", "en").is_err());
         assert!(browser_install_guide_url("edge", "de").is_err());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_completion_actions_map_to_systemctl_commands() {
+        assert_eq!(super::linux_completion_command("none").unwrap(), None);
+        assert_eq!(
+            super::linux_completion_command("shutdown").unwrap(),
+            Some("poweroff")
+        );
+        assert_eq!(
+            super::linux_completion_command("sleep").unwrap(),
+            Some("suspend")
+        );
+        assert!(super::linux_completion_command("invalid").is_err());
     }
 
     #[test]
