@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3]
+
+### Added
+- Preserve the main window's state between launches.
+
+### Changed
+- Improve the main window layout and download table sizing.
+
 ## [1.3.2]
 
 ### Added

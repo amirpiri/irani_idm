@@ -50,9 +50,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .stat{background:var(--card);padding:10px 16px;border-radius:12px;font-weight:600}
 #q{flex:1;min-width:160px;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);user-select:text}
 #tw{flex:1;overflow:auto;background:var(--card);border-radius:12px;border:1px solid var(--bd)}
-table{width:100%;border-collapse:collapse}
+table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse}
 th{position:sticky;top:0;background:var(--card);text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd);font-weight:600}
 td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td:nth-child(5),td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
 tr.r{cursor:default}tr.r.sel{background:var(--sel)}
 td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
@@ -128,7 +129,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
       <div class="stat" id="sAct"></div><div class="stat" id="sDone"></div>
       <input id="q" data-p="search" oninput="q=this.value.toLowerCase();render()">
     </div>
-    <div id="tw"><table><thead><tr>
+    <div id="tw"><table><colgroup><col style="width:32%"><col style="width:13%"><col style="width:12%"><col style="width:19%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr>
       <th data-i="name"></th><th data-i="size"></th><th data-i="connections"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
