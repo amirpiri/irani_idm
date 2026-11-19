@@ -5,6 +5,13 @@ All notable changes to Irani IDM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0]
+
+### Added
+- Open the browser extension consent page once when a download is started without an explicit handoff decision.
+- Remember and respect explicit browser download-handoff opt-out choices.
+- Distinguish Firefox permission revocation from handoff disabled in Options.
+
 ## [1.7.1]
 
 ### Fixed

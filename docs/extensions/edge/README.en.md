@@ -44,5 +44,7 @@ To change your choice later, open `edge://extensions` → **Irani IDM Browser In
 - **The extension stops working after moving its folder:** Load it again from its new permanent location.
 - **Updating:** Extract the new release, replace the old folder contents, then use the reload control on `edge://extensions`. You can also remove the old extension and load the new folder.
 - **Downloads remain in Edge:** Verify that handoff is enabled and Irani IDM is running. Downloads that depend on browser-only cookies, authentication, or custom headers may not work in the desktop app.
+- **The consent checkbox is unchecked or handoff was turned off:** Open `edge://extensions` → **Irani IDM Browser Integration** → **Extension options**. Read the data-transfer notice, tick the consent checkbox, and click **Save preference**. If you start a download before making a choice, the extension opens this page once to remind you; it never enables handoff automatically. If you previously saved the checkbox as unchecked, open Options yourself to change that choice.
+- **The checkbox or Options page seems missing:** Open `edge://extensions`, make sure Irani IDM Browser Integration is enabled, click its reload control, then open **Extension options**. If it is not listed, load the extracted extension folder again using **Load unpacked**.
 
 Only HTTP and HTTPS download URLs are supported. Read the [privacy policy](https://github.com/amirpiri/irani_idm/blob/main/browser-extension/PRIVACY.md).
