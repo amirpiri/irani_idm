@@ -46,6 +46,9 @@ enum Status {
 
 struct Item {
     url: String,
+    server_ip: Option<String>,
+    server_country: Option<String>,
+    server_country_code: Option<String>,
     path: PathBuf,
     total: Option<u64>,
     resumable: bool,
@@ -125,6 +128,12 @@ struct SavedSeg { start: u64, end: u64, done: u64 }
 struct Saved {
     id: u64,
     url: String,
+    #[serde(default)]
+    server_ip: Option<String>,
+    #[serde(default)]
+    server_country: Option<String>,
+    #[serde(default)]
+    server_country_code: Option<String>,
     path: PathBuf,
     total: Option<u64>,
     resumable: bool,
@@ -157,6 +166,8 @@ pub struct View {
     pub id: u64,
     pub name: String,
     url: String,
+    server_country: Option<String>,
+    server_country_code: Option<String>,
     path: String,
     total: Option<u64>,
     downloaded: u64,
@@ -267,6 +278,9 @@ impl Manager {
                 s.id,
                 Item {
                     url: s.url, path: s.path, total: s.total, resumable: s.resumable, status,
+                    server_ip: s.server_ip,
+                    server_country: s.server_country,
+                    server_country_code: s.server_country_code,
                     proxy_used: s.proxy_used,
                     restart_after_cancel: false,
                     file_created: s.file_created,
@@ -354,6 +368,9 @@ impl Manager {
             .map(|(id, it)| Saved {
                 id: *id,
                 url: it.url.clone(),
+                server_ip: it.server_ip.clone(),
+                server_country: it.server_country.clone(),
+                server_country_code: it.server_country_code.clone(),
                 path: it.path.clone(),
                 total: it.total,
                 resumable: it.resumable,
@@ -413,6 +430,8 @@ impl Manager {
             id,
             name: it.path.file_name().map(|n| n.to_string_lossy().into()).unwrap_or_default(),
             url: it.url.clone(),
+            server_country: it.server_country.clone(),
+            server_country_code: it.server_country_code.clone(),
             path: it.path.to_string_lossy().into(),
             total: it.total,
             downloaded,
@@ -453,6 +472,9 @@ impl Manager {
                 id,
                 Item {
                     url,
+                    server_ip: None,
+                    server_country: None,
+                    server_country_code: None,
                     path: dir.join(name),
                     total: None,
                     resumable: false,
@@ -510,7 +532,8 @@ impl Manager {
             result = tokio::time::timeout(PROBE_TIMEOUT, self.probe(&parsed)) => result,
         };
         match result {
-            Ok(Ok((total, ranged, name))) => {
+            Ok(Ok((total, ranged, name, ip))) => {
+                self.record_server(id, ip);
                 self.finish_preparation(id, total, ranged, name, connections).await;
             }
             Ok(Err(error)) => self.fail_preparation(id, error),
@@ -654,7 +677,7 @@ impl Manager {
         self.save();
     }
 
-    async fn probe(&self, u: &url::Url) -> Result<(Option<u64>, bool, String), String> {
+    async fn probe(&self, u: &url::Url) -> Result<(Option<u64>, bool, String, Option<std::net::IpAddr>), String> {
         let client = self.client.lock().unwrap().clone();
         let r = client.get(u.as_str()).header("Range", "bytes=0-0").send().await.map_err(|e| e.to_string())?;
         let st = r.status();
@@ -673,7 +696,90 @@ impl Manager {
             (r.content_length(), false)
         };
         let name = response_name(r.headers(), r.url());
-        Ok((total, ranged, name))
+        // With a configured HTTP/SOCKS proxy, `remote_addr()` may be absent
+        // or refer to the proxy rather than the download host. Resolve the
+        // response URL host as a fallback so we can still identify its country.
+        let prefer_peer = !self.proxy.lock().unwrap().enabled;
+        let ip = resolve_server_ip(r.url(), r.remote_addr().map(|address| address.ip()), prefer_peer).await;
+        Ok((total, ranged, name, ip))
+    }
+
+    fn record_server(&self, id: u64, ip: Option<std::net::IpAddr>) {
+        let ip = ip.map(|address| address.to_string());
+        let should_lookup = {
+            let mut items = self.items.lock().unwrap();
+            let Some(item) = items.get_mut(&id) else { return };
+            let should_lookup = if let Some(ip) = ip.as_ref() {
+                let same_ip = item.server_ip.as_ref() == Some(ip);
+                // Retry lookups when the IP was persisted by an earlier run
+                // but its country lookup never completed successfully.
+                if same_ip
+                    && item.server_country.is_some()
+                    && item.server_country_code.is_some()
+                {
+                    false
+                } else {
+                    item.server_ip = Some(ip.clone());
+                    if !same_ip {
+                        item.server_country = None;
+                        item.server_country_code = None;
+                    }
+                    true
+                }
+            } else {
+                false
+            };
+            should_lookup
+        };
+        if should_lookup {
+            self.save();
+            let manager = self.clone();
+            let ip = ip.unwrap();
+            tauri::async_runtime::spawn(async move { manager.lookup_server_location(id, ip).await; });
+        }
+    }
+
+    async fn lookup_server_location(&self, id: u64, ip: String) {
+        #[derive(Deserialize)]
+        struct IpLocation {
+            success: bool,
+            country: Option<String>,
+            country_code: Option<String>,
+        }
+        // Use the same client as downloads so geolocation also works when
+        // direct internet access is unavailable and the app is using a proxy.
+        let client = self.client.lock().unwrap().clone();
+        let result = client
+            .get(format!("https://ipwho.is/{ip}"))
+            .timeout(Duration::from_secs(5))
+            .send().await
+            .and_then(reqwest::Response::error_for_status);
+        let response = match result {
+            Ok(response) => response,
+            Err(error) => {
+                eprintln!("IP geolocation request failed for {ip}: {error}");
+                return;
+            }
+        };
+        let location = match response.json::<IpLocation>().await {
+            Ok(location) => location,
+            Err(error) => {
+                eprintln!("Could not parse IP geolocation response for {ip}: {error}");
+                return;
+            }
+        };
+        if !location.success {
+            eprintln!("IP geolocation service returned no location for {ip}");
+            return;
+        }
+        let mut items = self.items.lock().unwrap();
+        let Some(item) = items.get_mut(&id) else { return };
+        if item.server_ip.as_deref() == Some(&ip) {
+            item.server_country = location.country;
+            item.server_country_code = location.country_code;
+            drop(items);
+            self.save();
+        }
     }
 
     async fn finalize_fallback(
@@ -1018,6 +1124,34 @@ async fn wait_for_cancel(cancel: &AtomicBool) {
     }
 }
 
+async fn resolve_server_ip(
+    url: &url::Url,
+    peer_ip: Option<std::net::IpAddr>,
+    prefer_peer: bool,
+) -> Option<std::net::IpAddr> {
+    if prefer_peer {
+        if let Some(ip) = peer_ip {
+            return Some(ip);
+        }
+    }
+    let host = url.host_str()?;
+    if let Ok(ip) = host.parse() {
+        return Some(ip);
+    }
+    let port = url.port_or_known_default()?;
+    match tokio::time::timeout(Duration::from_secs(3), tokio::net::lookup_host((host, port))).await {
+        Ok(Ok(addresses)) => addresses.into_iter().next().map(|address| address.ip()),
+        Ok(Err(error)) => {
+            eprintln!("Could not resolve download host {host}: {error}");
+            None
+        }
+        Err(_) => {
+            eprintln!("Timed out resolving download host {host}");
+            None
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn run_seg(
     client: reqwest::Client, url: String, path: PathBuf, seg: Arc<Seg>, ranged: bool,
@@ -1082,6 +1216,9 @@ async fn attempt(
         }
         result = req.send() => result.map_err(|e| e.to_string())?,
     };
+    let prefer_peer = !manager.proxy.lock().unwrap().enabled;
+    let server_ip = resolve_server_ip(resp.url(), resp.remote_addr().map(|address| address.ip()), prefer_peer).await;
+    manager.record_server(id, server_ip);
     let st = resp.status();
     if ranged && st.as_u16() != 206 {
         return Err(format!("HTTP {st} (range not honoured)"));
@@ -1175,6 +1312,9 @@ mod tests {
             id,
             Item {
                 url: "https://example.test/download.bin".into(),
+                server_ip: None,
+                server_country: None,
+                server_country_code: None,
                 path: path.clone(),
                 total: Some(8),
                 resumable: true,

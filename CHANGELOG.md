@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2]
+
+### Added
+- Show the download server's country and flag in download details.
+- Show whether a download supports resuming.
+
 ## [1.3.0]
 
 ### Added

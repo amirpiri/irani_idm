@@ -47,6 +47,9 @@ h1{font-size:1.36em;margin:0 0 7px;overflow-wrap:anywhere}
 .stat span:first-child,.segment-info{color:var(--mut)}
 .proxy-badge{display:inline-flex;align-items:center;gap:4px;margin-top:10px;padding:3px 9px;border:1px solid color-mix(in srgb,var(--ok) 45%,var(--bd));border-radius:999px;background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--ok);font-size:.86em;font-weight:600}
 .proxy-badge[hidden]{display:none!important}
+.country-value{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+.country-flag{display:block;width:24px;height:18px;object-fit:cover;border:1px solid var(--bd);border-radius:2px;flex:none}
+.country-flag[hidden]{display:none}
 .section-title{font-weight:600;margin:0 0 10px}
 details.section-title>summary{cursor:pointer;user-select:none;list-style-position:inside}
 details.section-title[open]>summary{margin-bottom:10px}
@@ -93,6 +96,8 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
       <div class="stat"><span data-i="speed"></span><span id="speed"></span></div>
       <div class="stat"><span data-i="timeLeft"></span><span id="eta"></span></div>
       <div class="stat"><span data-i="connections"></span><span id="connections"></span></div>
+      <div class="stat"><span data-i="resumable"></span><span id="resumable"></span></div>
+      <div class="stat"><span data-i="serverCountry"></span><span class="country-value"><img id="serverFlag" class="country-flag" alt="" hidden><span id="serverCountryName">Detecting…</span></span></div>
     </div>
   </section>
   <section class="card">
@@ -133,10 +138,12 @@ function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-font-size",readSetting("appFontSize",12,18,14)+"px");
 }
 const words={
- en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
- fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
+ en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
+ fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
 };
 const t=key=>words[lang][key]||key;
+Object.assign(words.en,{resumable:"Resume supported",yes:"Yes",no:"No"});
+Object.assign(words.fa,{resumable:"امکان ادامه دانلود",yes:"بله",no:"خیر"});
 const $=name=>document.getElementById(name);
 function applyTheme(){
  const theme=themeMode==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):themeMode;
@@ -162,6 +169,11 @@ function duration(value){
  return [hours&&`${nf(hours,0)} ${t("h")}`,(hours||minutes)&&`${nf(minutes,0)} ${t("m")}`,`${nf(seconds,0)} ${t("s")}`].filter(Boolean).join(" ");
 }
 function showError(message=""){$("error").textContent=message}
+function countryFlagUrl(code){
+ const countryCode=String(code||"").trim().toUpperCase();
+ if(!/^[A-Z]{2}$/.test(countryCode))return "";
+ return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
+}
 let proxyBadgeUpdate=0;
 let currentDownload=null;
 let proxyEnabled=null;
@@ -187,6 +199,16 @@ function render(download){
  document.title=`${download.name} - Irani IDM`;
  $("name").textContent=download.name;
  $("url").textContent=download.url;
+ const hasServerCountry=Boolean(download.server_country);
+ const flagUrl=countryFlagUrl(download.server_country_code);
+ const flagEl=$("serverFlag");
+ flagEl.hidden=!flagUrl;
+ if(flagUrl&&flagEl.src!==flagUrl){
+  flagEl.onerror=()=>{flagEl.hidden=true};
+  flagEl.src=flagUrl;
+ }
+ $("serverCountryName").textContent=hasServerCountry?download.server_country:
+  (["completed","error"].includes(download.status)?(lang==="fa"?"نامشخص":"Unavailable"):(lang==="fa"?"در حال تشخیص…":"Detecting…"));
  updateProxyBadge(download);
  const percent=download.total?Math.min(100,download.downloaded/download.total*100):(download.status==="completed"?100:0);
  $("overallBar").style.width=percent+"%";
@@ -198,6 +220,9 @@ function render(download){
  $("speed").textContent=download.status==="downloading"?bytes(download.speed)+"/s":"—";
  $("eta").textContent=download.status==="downloading"?duration(download.eta):"—";
  $("connections").textContent=`${nf(download.segments.filter(segment=>segment.state===1).length,0)}/${nf(download.segments.length,0)}`;
+ const resumableEl=$("resumable");
+ resumableEl.textContent=t(download.resumable?"yes":"no");
+	resumableEl.style.color=download.resumable?"var(--ok)":"var(--er)";
  if(document.activeElement!==$("limit"))$("limit").value=download.limit_kbps;
  $("resume").disabled=download.status==="completed"||download.status==="downloading"||download.status==="preparing";
  $("pause").disabled=download.status!=="downloading";
