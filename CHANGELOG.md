@@ -5,6 +5,23 @@ All notable changes to Irani IDM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.9.0]
+
+### Added
+- Add a system tray menu with download controls and active-download status.
+- Add animated and high-contrast progress feedback for active downloads.
+- Add `.downloading` temporary filenames with automatic rename after successful completion.
+
+### Changed
+- Keep application windows open in the tray when closed instead of exiting.
+- Increase the Firefox minimum version requirement to Firefox 142.
+- Improve download finalization so completed files cannot overwrite existing files.
+
+### Fixed
+- Restore legacy incomplete downloads safely under `.downloading` temporary filenames.
+
 ## [1.8.0]
 
 ### Added

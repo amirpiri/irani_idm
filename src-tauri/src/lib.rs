@@ -10,7 +10,12 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
-use tauri::{Emitter, Manager as _, State};
+use tauri::{
+    image::Image,
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Emitter, Manager as _, State,
+};
 
 #[cfg(target_os = "windows")]
 #[link(name = "PowrProf")]
@@ -51,10 +56,15 @@ impl CompletionTracker {
             }
         }
 
-        let finished: Vec<u64> = self.pending_ids.iter().copied().filter(|id| {
-            matches!(statuses.get(id), Some(&"completed") | Some(&"error"))
-                || !statuses.contains_key(id)
-        }).collect();
+        let finished: Vec<u64> = self
+            .pending_ids
+            .iter()
+            .copied()
+            .filter(|id| {
+                matches!(statuses.get(id), Some(&"completed") | Some(&"error"))
+                    || !statuses.contains_key(id)
+            })
+            .collect();
         for id in finished {
             if statuses.get(&id) == Some(&"completed") {
                 self.batch_had_success = true;
@@ -96,8 +106,7 @@ fn open_project_page() -> Result<(), String> {
 #[tauri::command]
 fn open_browser_install_guide(browser: String, language: String) -> Result<(), String> {
     let guide_url = browser_install_guide_url(&browser, &language)?;
-    open::that(guide_url)
-        .map_err(|error| format!("Could not open the installation guide: {error}"))
+    open::that(guide_url).map_err(|error| format!("Could not open the installation guide: {error}"))
 }
 
 fn browser_install_guide_url(browser: &str, language: &str) -> Result<String, String> {
@@ -193,11 +202,17 @@ fn linux_completion_command(action: &str) -> Result<Option<&'static str>, String
 }
 
 #[tauri::command]
-fn set_completion_action(state: State<CompletionActionState>, action: String) -> Result<(), String> {
+fn set_completion_action(
+    state: State<CompletionActionState>,
+    action: String,
+) -> Result<(), String> {
     if !["none", "shutdown", "sleep"].contains(&action.as_str()) {
         return Err("Unsupported download completion action".into());
     }
-    *state.0.lock().map_err(|_| "Completion action settings are unavailable")? = action;
+    *state
+        .0
+        .lock()
+        .map_err(|_| "Completion action settings are unavailable")? = action;
     Ok(())
 }
 
@@ -251,7 +266,8 @@ fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), Str
     if link.scheme() != "iranidm" || link.host_str() != Some("download") {
         return Err("Unsupported Irani IDM link".into());
     }
-    let target = link.query_pairs()
+    let target = link
+        .query_pairs()
         .find(|(key, _)| key == "url")
         .map(|(_, value)| value.into_owned())
         .ok_or("Download link does not contain a URL")?;
@@ -339,6 +355,40 @@ fn download_view(m: State<Manager>, id: u64) -> Result<engine::View, String> {
     m.view(id).ok_or_else(|| "Download not found".into())
 }
 
+fn restore_app_windows(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn tray_activity_icon(base: &Image<'_>, active: bool) -> Image<'static> {
+    let mut rgba = base.rgba().to_vec();
+    if active {
+        let width = base.width() as i32;
+        let height = base.height() as i32;
+        let center_x = width - 7;
+        let center_y = height - 7;
+        for y in (center_y - 6).max(0)..=(center_y + 6).min(height - 1) {
+            for x in (center_x - 6).max(0)..=(center_x + 6).min(width - 1) {
+                let dx = x - center_x;
+                let dy = y - center_y;
+                let distance = dx * dx + dy * dy;
+                if distance <= 36 {
+                    let offset = ((y * width + x) * 4) as usize;
+                    let color = if distance <= 20 {
+                        [38, 190, 92, 255]
+                    } else {
+                        [255, 255, 255, 255]
+                    };
+                    rgba[offset..offset + 4].copy_from_slice(&color);
+                }
+            }
+        }
+    }
+    Image::new_owned(rgba, base.width(), base.height())
+}
+
 #[tauri::command]
 async fn open_download_window(
     app: tauri::AppHandle,
@@ -348,6 +398,7 @@ async fn open_download_window(
     let download = m.view(id).ok_or_else(|| "Download not found".to_string())?;
     let label = format!("download-{id}");
     if let Some(window) = app.get_webview_window(&label) {
+        window.show().map_err(|e| e.to_string())?;
         return window.set_focus().map_err(|e| e.to_string());
     }
 
@@ -374,7 +425,10 @@ async fn open_download_window(
     let (result_tx, result_rx) = tokio::sync::oneshot::channel();
     app.run_on_main_thread(move || {
         let result = if let Some(window) = window_app.get_webview_window(&label) {
-            window.set_focus().map_err(|e| e.to_string())
+            window
+                .show()
+                .map_err(|e| e.to_string())
+                .and_then(|()| window.set_focus().map_err(|e| e.to_string()))
         } else {
             tauri::WebviewWindowBuilder::new(
                 &window_app,
@@ -429,7 +483,11 @@ fn get_proxy_settings(m: State<Manager>) -> ProxySettings {
 }
 
 #[tauri::command]
-fn set_proxy_settings(app: tauri::AppHandle, m: State<Manager>, settings: ProxySettings) -> Result<(), String> {
+fn set_proxy_settings(
+    app: tauri::AppHandle,
+    m: State<Manager>,
+    settings: ProxySettings,
+) -> Result<(), String> {
     let enabled = settings.enabled;
     m.set_proxy_settings(settings)?;
     let downloads = m.views(0.5);
@@ -453,10 +511,7 @@ async fn test_proxy_settings(settings: ProxySettings) -> Result<String, String> 
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            restore_app_windows(app);
         }))
         .plugin(tauri_plugin_deep_link::init());
     builder
@@ -472,6 +527,55 @@ pub fn run() {
             app.manage(mgr.clone());
             let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
             app.manage(completion_action.clone());
+
+            let show = MenuItem::with_id(app, "show", "Open Irani IDM", true, None::<&str>)?;
+            let pause_downloads = MenuItem::with_id(
+                app,
+                "pause-downloads",
+                "Pause all downloads",
+                false,
+                None::<&str>,
+            )?;
+            let resume_downloads = MenuItem::with_id(
+                app,
+                "resume-downloads",
+                "Resume all downloads",
+                false,
+                None::<&str>,
+            )?;
+            let quit = MenuItem::with_id(app, "quit", "Exit", true, None::<&str>)?;
+            let tray_menu =
+                Menu::with_items(app, &[&show, &pause_downloads, &resume_downloads, &quit])?;
+            let base_tray_icon = app
+                .default_window_icon()
+                .map(|icon| Image::new_owned(icon.rgba().to_vec(), icon.width(), icon.height()));
+            let mut tray = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .tooltip("Irani IDM")
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "show" => {
+                        restore_app_windows(app);
+                    }
+                    "pause-downloads" => app.state::<Manager>().pause_all(),
+                    "resume-downloads" => app.state::<Manager>().resume_all(),
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        restore_app_windows(&tray.app_handle());
+                    }
+                });
+            if let Some(icon) = &base_tray_icon {
+                tray = tray.icon(icon.clone());
+            }
+            let tray = tray.build(app)?;
+
             use tauri_plugin_deep_link::DeepLinkExt;
             if let Some(urls) = app.deep_link().get_current()? {
                 for url in urls {
@@ -493,21 +597,59 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let (mut last, mut ticks) = (Instant::now(), 0u32);
+                let mut last_tray_active = None;
+                let mut last_tray_counts = None;
                 // Seed persisted history so it is not mistaken for new work,
                 // while enrolling any downloads already active at startup.
                 let initial_downloads = mgr.views(0.5);
                 let mut completion_tracker = CompletionTracker::default();
-                completion_tracker.seed(initial_downloads.iter()
-                    .map(|download| (download.id, download.status)));
+                completion_tracker.seed(
+                    initial_downloads
+                        .iter()
+                        .map(|download| (download.id, download.status)),
+                );
                 loop {
                     tokio::time::sleep(Duration::from_millis(500)).await;
                     let dt = last.elapsed().as_secs_f64();
                     last = Instant::now();
                     let downloads = mgr.views(dt);
-                    let should_run_action = completion_tracker.observe(downloads.iter()
-                        .map(|download| (download.id, download.status)));
+                    let active_count = downloads
+                        .iter()
+                        .filter(|download| matches!(download.status, "preparing" | "downloading"))
+                        .count();
+                    let resumable_count = downloads
+                        .iter()
+                        .filter(|download| matches!(download.status, "paused" | "error"))
+                        .count();
+                    if last_tray_counts != Some((active_count, resumable_count)) {
+                        let _ = pause_downloads.set_enabled(active_count > 0);
+                        let _ = resume_downloads.set_enabled(resumable_count > 0);
+                        let tooltip = if active_count > 0 {
+                            format!("Irani IDM — {active_count} active download(s)")
+                        } else if resumable_count > 0 {
+                            format!("Irani IDM — {resumable_count} paused download(s)")
+                        } else {
+                            "Irani IDM — No active downloads".to_string()
+                        };
+                        let _ = tray.set_tooltip(Some(tooltip));
+                        last_tray_counts = Some((active_count, resumable_count));
+                    }
+                    let is_active = active_count > 0;
+                    if last_tray_active != Some(is_active) {
+                        if let Some(icon) = &base_tray_icon {
+                            let _ = tray.set_icon(Some(tray_activity_icon(icon, is_active)));
+                        }
+                        last_tray_active = Some(is_active);
+                    }
+                    let should_run_action = completion_tracker.observe(
+                        downloads
+                            .iter()
+                            .map(|download| (download.id, download.status)),
+                    );
                     if should_run_action {
-                        let action = completion_action.0.lock()
+                        let action = completion_action
+                            .0
+                            .lock()
                             .map(|value| value.clone())
                             .unwrap_or_else(|_| "none".into());
                         if action != "none" {
@@ -549,8 +691,21 @@ pub fn run() {
             set_proxy_settings,
             test_proxy_settings
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running app");
+        .build(tauri::generate_context!())
+        .expect("error while building app")
+        .run(|app, event| {
+            if let tauri::RunEvent::WindowEvent {
+                label,
+                event: tauri::WindowEvent::CloseRequested { api, .. },
+                ..
+            } = event
+            {
+                api.prevent_close();
+                if let Some(window) = app.get_webview_window(&label) {
+                    let _ = window.hide();
+                }
+            }
+        });
 }
 
 #[cfg(test)]

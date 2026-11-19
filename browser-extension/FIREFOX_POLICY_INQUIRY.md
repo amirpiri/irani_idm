@@ -42,7 +42,7 @@ Thank you.
 
 - Extension name: Irani IDM Download Integration
 - Manifest version: 3
-- Minimum Firefox: 140.0
+- Minimum Firefox: 142.0
 - Extension ID: `irani-idm@irani-idm`
 - Package: `store-packages/Irani-IDM-Firefox.zip`
 - Privacy policy: `PRIVACY.md` (publish it to the public repository first)

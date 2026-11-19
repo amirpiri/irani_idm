@@ -251,8 +251,19 @@ impl Manager {
             .unwrap_or_default();
         let mut map = HashMap::new();
         let mut max = 0;
-        for s in saved {
+        for mut s in saved {
             max = max.max(s.id);
+            // Older versions wrote directly to the final filename. Move
+            // unfinished files to the visible temporary-name convention.
+            if !s.completed && s.file_created {
+                if let Some(temporary) = temporary_download_path(&s.path) {
+                    if s.path.exists() && !temporary.exists()
+                        && std::fs::rename(&s.path, &temporary).is_ok()
+                    {
+                        s.path = temporary;
+                    }
+                }
+            }
             let segs: Vec<_> = s
                 .segs
                 .iter()
@@ -990,15 +1001,35 @@ impl Manager {
                 Err(e) => err = Some(e.to_string()),
             }
         }
+        let completed_path = {
+            let items = self.items.lock().unwrap();
+            items.get(&id).and_then(|item| {
+                (!item.removing && item.segs.iter().all(|segment| segment.state.load(Relaxed) == DONE))
+                    .then(|| item.path.clone())
+            })
+        };
+        let completion_error = completed_path.and_then(|path| {
+            match complete_download_file(&path) {
+                Ok(final_path) => {
+                    if let Some(item) = self.items.lock().unwrap().get_mut(&id) {
+                        item.path = final_path;
+                    }
+                    None
+                }
+                Err(error) => Some(error),
+            }
+        });
         let restart = if let Some(it) = self.items.lock().unwrap().get_mut(&id) {
             let all_done = it.segs.iter().all(|s| s.state.load(Relaxed) == DONE);
             let restart = it.restart_after_cancel && !it.removing && !all_done;
             it.restart_after_cancel = false;
-            it.status = if all_done {
+            it.status = if all_done && completion_error.is_none() {
                 if it.total.is_none() {
                     it.total = Some(it.segs.iter().map(|s| s.done.load(Relaxed)).sum());
                 }
                 Status::Completed
+            } else if all_done {
+                Status::Error(completion_error.unwrap_or_else(|| "Could not finalize download".into()))
             } else if restart {
                 Status::Paused
             } else if let Some(e) = err {
@@ -1101,7 +1132,11 @@ fn create_download_file(dir: &Path, name: &str, total: Option<u64>) -> Result<Pa
         } else {
             format!("{stem} ({suffix}){extension}")
         };
-        let path = dir.join(filename);
+        let final_path = dir.join(filename);
+        let path = append_download_suffix(&final_path).ok_or("Invalid download filename")?;
+        if final_path.exists() {
+            continue;
+        }
         match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
             Ok(file) => {
                 if let Some(total) = total {
@@ -1118,6 +1153,32 @@ fn create_download_file(dir: &Path, name: &str, total: Option<u64>) -> Result<Pa
         }
     }
     Err("Could not choose a unique file name".into())
+}
+
+fn temporary_download_path(final_path: &Path) -> Option<PathBuf> {
+    let name = final_path.file_name()?.to_string_lossy();
+    if name.ends_with(".downloading") {
+        return Some(final_path.to_path_buf());
+    }
+    append_download_suffix(final_path)
+}
+
+fn append_download_suffix(final_path: &Path) -> Option<PathBuf> {
+    let name = final_path.file_name()?.to_string_lossy();
+    Some(final_path.with_file_name(format!("{name}.downloading")))
+}
+
+fn complete_download_file(temporary_path: &Path) -> Result<PathBuf, String> {
+    let name = temporary_path.file_name().ok_or("Invalid temporary download filename")?;
+    let name = name.to_string_lossy();
+    let final_name = name.strip_suffix(".downloading")
+        .ok_or("Temporary download filename is missing its .downloading suffix")?;
+    let final_path = temporary_path.with_file_name(final_name);
+    if final_path.exists() {
+        return Err(format!("Cannot finalize download because '{}' already exists", final_path.display()));
+    }
+    std::fs::rename(temporary_path, &final_path).map_err(|error| error.to_string())?;
+    Ok(final_path)
 }
 
 fn url_name(url: &url::Url) -> String {
@@ -1473,9 +1534,96 @@ mod tests {
         let created = create_download_file(&dir, "file.bin", Some(2)).unwrap();
 
         assert_eq!(std::fs::read(&original).unwrap(), b"keep");
-        assert_eq!(created.file_name().unwrap(), "file (1).bin");
+        assert_eq!(created.file_name().unwrap(), "file (1).bin.downloading");
         assert_eq!(std::fs::metadata(created).unwrap().len(), 2);
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn completed_download_is_renamed_to_its_original_filename() {
+        let dir = std::env::temp_dir().join(format!(
+            "irani-idm-complete-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let temporary = create_download_file(&dir, "movie.mp4", Some(4)).unwrap();
+        let final_path = complete_download_file(&temporary).unwrap();
+
+        assert_eq!(final_path.file_name().unwrap(), "movie.mp4");
+        assert!(final_path.exists());
+        assert!(!temporary.exists());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn completion_does_not_overwrite_an_existing_final_file() {
+        let dir = std::env::temp_dir().join(format!(
+            "irani-idm-collision-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let final_path = dir.join("movie.mp4");
+        std::fs::write(&final_path, b"keep").unwrap();
+        let temporary = dir.join("movie.mp4.downloading");
+        std::fs::write(&temporary, b"part").unwrap();
+
+        assert!(complete_download_file(&temporary).is_err());
+        assert_eq!(std::fs::read(&final_path).unwrap(), b"keep");
+        assert_eq!(std::fs::read(&temporary).unwrap(), b"part");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn startup_marks_legacy_incomplete_files_as_downloading() {
+        let data_dir = std::env::temp_dir().join(format!(
+            "irani-idm-migration-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let download_dir = data_dir.join("downloads");
+        std::fs::create_dir_all(&download_dir).unwrap();
+        let old_path = download_dir.join("legacy.zip");
+        std::fs::write(&old_path, b"partial").unwrap();
+        let saved = Saved {
+            id: 1,
+            url: "https://example.test/legacy.zip".into(),
+            server_ip: None,
+            server_country: None,
+            server_country_code: None,
+            path: old_path.clone(),
+            total: Some(10),
+            resumable: true,
+            file_created: true,
+            connections: 1,
+            metadata_pending: false,
+            completed: false,
+            proxy_used: false,
+            error: None,
+            limit_kbps: 0,
+            segs: vec![SavedSeg { start: 0, end: 9, done: 7 }],
+        };
+        std::fs::write(data_dir.join("downloads.json"), serde_json::to_vec(&vec![saved]).unwrap())
+            .unwrap();
+
+        let manager = Manager::load(&data_dir);
+        let migrated_path = manager.path_of(1).unwrap();
+
+        assert_eq!(migrated_path.file_name().unwrap(), "legacy.zip.downloading");
+        assert!(!old_path.exists());
+        assert_eq!(std::fs::read(migrated_path).unwrap(), b"partial");
+        std::fs::remove_dir_all(data_dir).unwrap();
     }
 
     #[tokio::test]

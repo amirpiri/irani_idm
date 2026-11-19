@@ -131,7 +131,8 @@ The implementation now declares Firefox's optional `browsingActivity` and
 page save action, fails closed if they are absent/revoked, and provides a
 decline-to-uninstall path using Firefox's native `management.uninstallSelf()`
 API (without requesting the broad `management` permission). The add-on is
-restricted to Firefox 140+ to use the built-in data-consent API.
+restricted to Firefox 142+ so the built-in data-consent API is supported on
+both desktop and Android.
 
 There is a separate upcoming eligibility question that code changes cannot
 conclusively resolve: Mozilla's published policy preview is scheduled to take

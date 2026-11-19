@@ -118,7 +118,7 @@ foreach ($archive in Get-ChildItem -LiteralPath $outputDirectory -Filter '*.zip'
                 throw 'Firefox background configuration is invalid.'
             }
             $gecko = $manifest.browser_specific_settings.gecko
-            if ($gecko.strict_min_version -ne '140.0' -or $gecko.data_collection_permissions.required -notcontains 'none') {
+            if ($gecko.strict_min_version -ne '142.0' -or $gecko.data_collection_permissions.required -notcontains 'none') {
                 throw 'Firefox minimum version or required data declaration is invalid.'
             }
             if ($gecko.data_collection_permissions.optional -notcontains 'browsingActivity' -or $gecko.data_collection_permissions.optional -notcontains 'websiteActivity') {

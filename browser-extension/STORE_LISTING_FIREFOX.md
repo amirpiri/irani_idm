@@ -31,7 +31,8 @@ the file and manages its connections, progress, pause, and resume.
 
 **Requirements and limitations**
 
-- Firefox 140 or later is required for built-in data-collection consent.
+- Firefox 142 or later is required for built-in data-collection consent on
+  desktop and Android.
 - Irani IDM must be installed and its `iranidm://` protocol handler registered.
 - The extension handles HTTP and HTTPS downloads.
 - URLs can include private query parameters or temporary access tokens. The
