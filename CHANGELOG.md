@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1]
+
+### Fixed
+- Honor the download folder selected in Settings for manual downloads, browser handoffs, and `iranidm://` links, and persist the selection across app restarts.
+
 ## [1.14.0]
 
 ### Added

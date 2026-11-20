@@ -465,7 +465,10 @@ async function saveSet(){
  const nextCompletionAction=["none","shutdown","sleep"].includes($("sCompletionAction").value)?$("sCompletionAction").value:"none";
  try{await invoke("set_completion_action",{action:nextCompletionAction})}
  catch(error){$("proxyError").textContent=String(error);return}
- lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=$("sDir").value.trim();completionAction=nextCompletionAction;
+ const nextDir=$("sDir").value.trim();
+ try{await invoke("set_download_dir",{path:nextDir})}
+ catch(error){$("proxyError").textContent=String(error);return}
+ lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=nextDir;completionAction=nextCompletionAction;
  appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
  appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
  windowOpacity=Math.min(100,Math.max(30,Number($("sTransparency").value)||100));
@@ -564,6 +567,12 @@ applyTheme();
 applyLang();
 applyDisplaySettings();
 showAppVersion();
+invoke("default_dir").then(async configuredDir=>{
+ if(dir){
+  try{await invoke("set_download_dir",{path:dir})}
+  catch(error){console.warn("Could not restore the saved download folder:",error);dir=configuredDir;localStorage.dir=dir}
+ }else{dir=configuredDir;localStorage.dir=dir}
+}).catch(error=>console.warn("Could not load the download folder:",error));
 checkForUpdate();
 </script>
 </body>

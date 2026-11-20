@@ -296,6 +296,29 @@ fn downloads_dir() -> Option<PathBuf> {
     dirs::download_dir().or_else(|| dirs::home_dir().map(|home| home.join("Downloads")))
 }
 
+#[derive(Clone)]
+struct DownloadDirectory(Arc<Mutex<PathBuf>>);
+
+impl DownloadDirectory {
+    fn get(&self) -> Result<PathBuf, String> {
+        self.0
+            .lock()
+            .map(|path| path.clone())
+            .map_err(|_| "Download directory settings are unavailable".into())
+    }
+}
+
+fn load_download_directory(data_dir: &Path) -> PathBuf {
+    let settings_file = data_dir.join("download-directory.txt");
+    std::fs::read_to_string(settings_file)
+        .ok()
+        .map(|path| path.trim().to_string())
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+        .or_else(downloads_dir)
+        .unwrap_or_else(|| data_dir.join("Downloads"))
+}
+
 #[cfg(windows)]
 fn install_native_messaging_host(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use std::{
@@ -476,7 +499,11 @@ struct NativeDownloadResponse {
 }
 
 #[cfg(windows)]
-fn start_native_messaging_server(app: tauri::AppHandle, manager: Manager) {
+fn start_native_messaging_server(
+    app: tauri::AppHandle,
+    manager: Manager,
+    download_dir: DownloadDirectory,
+) {
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::windows::named_pipe::ServerOptions,
@@ -518,12 +545,9 @@ fn start_native_messaging_server(app: tauri::AppHandle, manager: Manager) {
                         "Only HTTP and HTTPS download URLs are supported",
                     ));
                 }
-                let directory = downloads_dir().ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        "Could not find the Downloads folder",
-                    )
-                })?;
+                let directory = download_dir
+                    .get()
+                    .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
                 let id = manager
                     .add(parsed.to_string(), directory, 8)
                     .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
@@ -582,7 +606,7 @@ fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), Str
     let manager = app.state::<Manager>();
     let id = manager.add(
         target_url.to_string(),
-        downloads_dir().ok_or("Could not find the Downloads folder")?,
+        app.state::<DownloadDirectory>().get()?,
         8,
     )?;
     let app = app.clone();
@@ -607,6 +631,7 @@ fn migrate_download_history(old_data_dir: &Path, new_data_dir: &Path) -> std::io
 #[tauri::command]
 fn add_download(
     m: State<'_, Manager>,
+    download_dir: State<'_, DownloadDirectory>,
     url: String,
     dir: Option<String>,
     connections: Option<u32>,
@@ -614,7 +639,7 @@ fn add_download(
     let dir = dir
         .filter(|d| !d.trim().is_empty())
         .map(PathBuf::from)
-        .or_else(downloads_dir)
+        .or_else(|| download_dir.get().ok())
         .ok_or("no download directory")?;
     m.add(url, dir, connections.unwrap_or(8))
 }
@@ -770,10 +795,42 @@ fn open_item(m: State<Manager>, id: u64, folder: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn default_dir() -> String {
-    downloads_dir()
-        .map(|p| p.to_string_lossy().into())
+fn default_dir(download_dir: State<DownloadDirectory>) -> String {
+    download_dir
+        .get()
+        .map(|path| path.to_string_lossy().into())
         .unwrap_or_default()
+}
+
+#[tauri::command]
+fn set_download_dir(
+    download_dir: State<'_, DownloadDirectory>,
+    path: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let path = if path.trim().is_empty() {
+        downloads_dir().ok_or("Could not find the Downloads folder")?
+    } else {
+        PathBuf::from(path.trim())
+    };
+    if !path.is_dir() {
+        return Err(format!(
+            "Download folder does not exist: {}",
+            path.display()
+        ));
+    }
+    let settings_file = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?
+        .join("download-directory.txt");
+    std::fs::write(settings_file, path.to_string_lossy().as_bytes())
+        .map_err(|error| error.to_string())?;
+    *download_dir
+        .0
+        .lock()
+        .map_err(|_| "Download directory settings are unavailable")? = path;
+    Ok(())
 }
 
 #[tauri::command]
@@ -830,8 +887,11 @@ pub fn run() {
             }
             let mgr = Manager::load(&dir);
             app.manage(mgr.clone());
+            let download_dir =
+                DownloadDirectory(Arc::new(Mutex::new(load_download_directory(&dir))));
+            app.manage(download_dir.clone());
             #[cfg(windows)]
-            start_native_messaging_server(app.handle().clone(), mgr.clone());
+            start_native_messaging_server(app.handle().clone(), mgr.clone(), download_dir);
             let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
             app.manage(completion_action.clone());
 
@@ -997,6 +1057,7 @@ pub fn run() {
             open_download_window,
             open_item,
             default_dir,
+            set_download_dir,
             get_proxy_settings,
             set_proxy_settings,
             test_proxy_settings
