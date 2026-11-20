@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1]
+
+### Added
+- Add a browser toolbar toggle for enabling or disabling download handoff.
+- Add Windows Native Messaging support for Chrome and Edge to transfer downloads without opening custom-protocol tabs.
+
+### Fixed
+- Prevent simultaneous first-run download events from opening multiple extension Options tabs.
+- Avoid replaying restored Chrome downloads by ignoring existing downloads during browser startup.
+
 ## [1.11.0]
 
 ### Fixed

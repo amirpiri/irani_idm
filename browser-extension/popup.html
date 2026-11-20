@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Irani IDM</title>
+  <style>
+    :root { color-scheme: light dark; font: 14px/1.45 system-ui, sans-serif; }
+    body { width: 280px; margin: 0; padding: 16px; background: Canvas; color: CanvasText; }
+    h1 { margin: 0 0 6px; font-size: 17px; }
+    p { margin: 0 0 14px; color: GrayText; }
+    label { display: flex; align-items: center; gap: 10px; margin: 14px 0; font-weight: 600; }
+    input { width: 18px; height: 18px; margin: 0; }
+    button { width: 100%; padding: 9px 12px; border: 0; border-radius: 7px; background: #176bba; color: white; font: inherit; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    #status { min-height: 1.4em; margin: 10px 0 0; font-size: 12px; }
+    a { display: inline-block; margin-top: 8px; color: LinkText; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Irani IDM</h1>
+    <p>Choose where new browser downloads should go.</p>
+    <label for="enabled"><input id="enabled" type="checkbox"> Catch downloads with Irani IDM</label>
+    <button id="save" type="button">Save</button>
+    <p id="status" role="status" aria-live="polite"></p>
+    <a id="options" href="#">Privacy and details</a>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

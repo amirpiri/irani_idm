@@ -1,6 +1,6 @@
 # Irani IDM Browser Integration — Privacy Policy
 
-**Last updated: 2026-11-19**
+**Last updated: 2026-11-20**
 
 Irani IDM Browser Integration hands browser download URLs to the Irani IDM
 desktop application on the same device. The extension does not operate an
@@ -18,12 +18,14 @@ passwords, or unrelated browsing history.
 
 ## How the information is used
 
-After the user enables handoff in the extension's first-run Options page, the
-extension cancels each eligible browser download and passes its original URL to
-the Irani IDM desktop application through the operating system's local
-`iranidm://` protocol handler. The desktop application then requests the file
-from the URL's server. If the user declines or disables handoff, browser
-downloads continue normally and their URLs are not handed to Irani IDM.
+After the user enables handoff in the extension's first-run Options page,
+Chrome and Edge pass the original URL to the Irani IDM desktop application
+through a Native Messaging host and a local named pipe. The browser download is
+cancelled only after the desktop application confirms that it accepted the URL.
+No custom-protocol browser tab is opened. Firefox continues to use the operating
+system's local `iranidm://` protocol handler. If the user declines or disables
+handoff, browser downloads continue normally and their URLs are not handed to
+Irani IDM.
 
 The extension itself does not send URLs to the Irani IDM publisher, an
 analytics provider, or another extension-operated remote service. It does not
@@ -53,9 +55,13 @@ the browser download URL.
 ## Permissions
 
 - **downloads:** detect new browser downloads and cancel the browser transfer
-  before handing the URL to Irani IDM.
+  only after Irani IDM confirms that it accepted the URL.
 - **storage:** remember whether the user has enabled download handoff and the
   version of the consent they accepted.
+- **nativeMessaging (Chrome and Edge):** send the full URL of an explicitly
+  enabled download to the locally installed Irani IDM Native Messaging host.
+  The host forwards it to the desktop application over a local named pipe; it
+  does not send the URL to a remote service.
 - **Firefox data collection:** `browsingActivity` (the full download URL) and
   `websiteActivity` (the user's action of starting a download) are optional
   data categories. Firefox asks for these permissions when the user enables
@@ -67,7 +73,7 @@ The extension opens its Options page after installation and starts with handoff
 disabled. Users must explicitly enable it before any download URL is transferred.
 In Firefox, the browser also asks for the optional data-collection permissions;
 handoff remains disabled if those permissions are denied or later revoked.
-Users can disable handoff at any time from the Options page or uninstall the
+Users can disable handoff at any time from the toolbar popup or Options page, or uninstall the
 extension. If the user declines the required Firefox data transfer, the Options
 page offers a one-click uninstall action with Firefox's confirmation dialog.
 Because download URLs may contain access tokens or other sensitive

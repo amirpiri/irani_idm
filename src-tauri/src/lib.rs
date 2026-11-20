@@ -292,6 +292,108 @@ fn downloads_dir() -> Option<PathBuf> {
     dirs::download_dir().or_else(|| dirs::home_dir().map(|home| home.join("Downloads")))
 }
 
+#[cfg(windows)]
+const NATIVE_MESSAGING_PIPE: &str = r"\\.\pipe\irani-idm-native-messaging-v1";
+
+#[cfg(windows)]
+#[derive(Deserialize)]
+struct NativeDownloadRequest {
+    url: String,
+}
+
+#[cfg(windows)]
+#[derive(Serialize)]
+struct NativeDownloadResponse {
+    ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+#[cfg(windows)]
+fn start_native_messaging_server(app: tauri::AppHandle, manager: Manager) {
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::windows::named_pipe::ServerOptions,
+    };
+
+    tauri::async_runtime::spawn(async move {
+        loop {
+            let mut pipe = match ServerOptions::new().create(NATIVE_MESSAGING_PIPE) {
+                Ok(pipe) => pipe,
+                Err(error) => {
+                    eprintln!("Could not create the Irani IDM native-messaging pipe: {error}");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+            };
+            if let Err(error) = pipe.connect().await {
+                eprintln!("Native-messaging client connection failed: {error}");
+                continue;
+            }
+
+            let result = async {
+                let length = pipe.read_u32_le().await? as usize;
+                if length == 0 || length > 1024 * 1024 {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Invalid native message length",
+                    ));
+                }
+                let mut bytes = vec![0; length];
+                pipe.read_exact(&mut bytes).await?;
+                let request: NativeDownloadRequest = serde_json::from_slice(&bytes)
+                    .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+                let parsed = url::Url::parse(request.url.trim()).map_err(|error| {
+                    std::io::Error::new(std::io::ErrorKind::InvalidInput, error)
+                })?;
+                if !["http", "https"].contains(&parsed.scheme()) || parsed.host_str().is_none() {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        "Only HTTP and HTTPS download URLs are supported",
+                    ));
+                }
+                let directory = downloads_dir().ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Could not find the Downloads folder",
+                    )
+                })?;
+                let id = manager
+                    .add(parsed.to_string(), directory, 8)
+                    .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
+                let _ = app.emit("downloads", manager.views(0.5));
+                restore_app_windows(&app);
+                eprintln!("Accepted browser download through Native Messaging (download id {id}).");
+                Ok::<(), std::io::Error>(())
+            }
+            .await;
+
+            let response = match result {
+                Ok(()) => NativeDownloadResponse {
+                    ok: true,
+                    error: None,
+                },
+                Err(error) => NativeDownloadResponse {
+                    ok: false,
+                    error: Some(error.to_string()),
+                },
+            };
+            let bytes = serde_json::to_vec(&response).unwrap_or_else(|_| {
+                br#"{"ok":false,"error":"Could not encode response"}"#.to_vec()
+            });
+            let write_result = async {
+                pipe.write_u32_le(bytes.len() as u32).await?;
+                pipe.write_all(&bytes).await?;
+                pipe.flush().await
+            }
+            .await;
+            if let Err(error) = write_result {
+                eprintln!("Could not reply to native-messaging client: {error}");
+            }
+        }
+    });
+}
+
 fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), String> {
     let link = url::Url::parse(raw_url).map_err(|error| error.to_string())?;
     if link.scheme() != "iranidm" || link.host_str() != Some("download") {
@@ -554,8 +656,25 @@ pub fn run() {
                 migrate_download_history(&config_dir.join("com.example.rustdm"), &dir)?;
             }
             std::fs::create_dir_all(&dir)?;
+            #[cfg(windows)]
+            {
+                if let (Some(local_data), Ok(executable)) =
+                    (dirs::data_local_dir(), std::env::current_exe())
+                {
+                    let native_dir = local_data
+                        .join("com.iranidm.desktop")
+                        .join("native-messaging");
+                    std::fs::create_dir_all(&native_dir)?;
+                    std::fs::write(
+                        native_dir.join("app-path.txt"),
+                        executable.to_string_lossy().as_bytes(),
+                    )?;
+                }
+            }
             let mgr = Manager::load(&dir);
             app.manage(mgr.clone());
+            #[cfg(windows)]
+            start_native_messaging_server(app.handle().clone(), mgr.clone());
             let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
             app.manage(completion_action.clone());
 

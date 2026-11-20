@@ -56,6 +56,8 @@ function New-StagedExtension {
     Copy-Item -LiteralPath (Join-Path $SourceDirectory 'background.js') -Destination $StageDirectory
     Copy-Item -LiteralPath (Join-Path $SourceDirectory 'options.html') -Destination $StageDirectory
     Copy-Item -LiteralPath (Join-Path $SourceDirectory 'options.js') -Destination $StageDirectory
+    Copy-Item -LiteralPath (Join-Path $SourceDirectory 'popup.html') -Destination $StageDirectory
+    Copy-Item -LiteralPath (Join-Path $SourceDirectory 'popup.js') -Destination $StageDirectory
     Copy-Item -LiteralPath (Join-Path $SourceDirectory 'icons') -Destination $StageDirectory -Recurse
 }
 
@@ -64,6 +66,8 @@ $requiredFiles = @(
     'background.js',
     'options.html',
     'options.js',
+    'popup.html',
+    'popup.js',
     'icons/16.png',
     'icons/32.png',
     'icons/48.png',
@@ -94,7 +98,7 @@ foreach ($archive in Get-ChildItem -LiteralPath $outputDirectory -Filter '*.zip'
     try {
         $names = @($entries.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
         $expected = @(
-            'manifest.json', 'background.js', 'options.html', 'options.js',
+            'manifest.json', 'background.js', 'options.html', 'options.js', 'popup.html', 'popup.js',
             'icons/16.png', 'icons/32.png', 'icons/48.png', 'icons/128.png'
         )
         if ($names.Count -ne $expected.Count -or @($expected | Where-Object { $_ -notin $names }).Count -gt 0) {
@@ -104,7 +108,7 @@ foreach ($archive in Get-ChildItem -LiteralPath $outputDirectory -Filter '*.zip'
         $manifestEntry = $entries.GetEntry('manifest.json')
         $reader = [System.IO.StreamReader]::new($manifestEntry.Open())
         try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-        if ($manifest.manifest_version -ne 3 -or $manifest.version -ne '1.0.0') {
+        if ($manifest.manifest_version -ne 3 -or $manifest.version -ne '1.0.1') {
             throw "Unexpected manifest version in $($archive.Name)"
         }
         if ($manifest.permissions -notcontains 'downloads' -or $manifest.permissions -notcontains 'storage') {
@@ -112,6 +116,9 @@ foreach ($archive in Get-ChildItem -LiteralPath $outputDirectory -Filter '*.zip'
         }
         if ($manifest.options_ui.page -ne 'options.html' -or $manifest.content_scripts -or $manifest.host_permissions) {
             throw "Unexpected page access or missing options page in $($archive.Name)"
+        }
+        if ($manifest.action.default_popup -ne 'popup.html') {
+            throw "Download toggle popup is missing in $($archive.Name)"
         }
         if ($archive.Name -like '*Firefox*') {
             if ($manifest.background.scripts -notcontains 'background.js' -or $manifest.background.service_worker) {
@@ -125,6 +132,9 @@ foreach ($archive in Get-ChildItem -LiteralPath $outputDirectory -Filter '*.zip'
                 throw 'Firefox optional data categories are missing.'
             }
         } else {
+            if ($manifest.permissions -notcontains 'nativeMessaging') {
+                throw "Chromium Native Messaging permission is missing in $($archive.Name)"
+            }
             if (-not $manifest.background.service_worker -or $manifest.background.service_worker -ne 'background.js' -or $manifest.background.scripts) {
                 throw "Chromium background configuration is invalid in $($archive.Name)"
             }
