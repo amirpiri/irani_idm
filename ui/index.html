@@ -52,6 +52,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 #tw{flex:1;overflow:auto;background:var(--card-glass);border-radius:12px;border:1px solid var(--bd)}
 table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse}
 th{position:sticky;top:0;background:var(--card-glass);text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd);font-weight:600}
+th[data-sort]{cursor:pointer;user-select:none}th[data-sort]:hover{color:var(--ac)}th[data-sort]::after{content:"↕";display:inline-block;margin-inline-start:7px;color:var(--mut);font-family:Arial,sans-serif;font-size:1.05em;font-weight:900;line-height:1;-webkit-text-stroke:1px currentColor;vertical-align:-.04em}th[data-sort][aria-sort="ascending"]::after{content:"↑";color:var(--ac);font-size:1.15em;-webkit-text-stroke:1.2px currentColor}th[data-sort][aria-sort="descending"]::after{content:"↓";color:var(--ac);font-size:1.15em;-webkit-text-stroke:1.2px currentColor}
 td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td:nth-child(5),td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
 tr.r{cursor:default}tr.r.sel{background:var(--sel-glass)}
@@ -142,8 +143,8 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
       <div class="stat" id="sAct"></div><div class="stat" id="sDone"></div><div class="stat" id="sSelected" hidden></div>
       <input id="q" data-p="search" oninput="q=this.value.toLowerCase();render()">
     </div>
-    <div id="tw"><table><colgroup><col style="width:38px"><col style="width:30%"><col style="width:12%"><col style="width:11%"><col style="width:18%"><col style="width:11%"><col style="width:11%"></colgroup><thead><tr>
-      <th class="pick"><input id="selectVisible" type="checkbox" aria-label="Select visible downloads" title="Select visible downloads"></th><th data-i="name"></th><th data-i="size"></th><th data-i="connections"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
+    <div id="tw"><table><colgroup><col style="width:38px"><col style="width:25%"><col style="width:15%"><col style="width:10%"><col style="width:9%"><col style="width:17%"><col style="width:10%"><col style="width:10%"></colgroup><thead><tr>
+      <th class="pick"><input id="selectVisible" type="checkbox" aria-label="Select visible downloads" title="Select visible downloads"></th><th data-i="name" data-sort="name" tabindex="0" role="button"></th><th data-i="addedAt" data-sort="addedAt" tabindex="0" role="button"></th><th data-i="size" data-sort="size" tabindex="0" role="button"></th><th data-i="connections" data-sort="connections" tabindex="0" role="button"></th><th data-i="status" data-sort="status" tabindex="0" role="button"></th><th data-i="timeLeft" data-sort="timeLeft" tabindex="0" role="button"></th><th data-i="speed" data-sort="speed" tabindex="0" role="button"></th>
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </div>
@@ -231,7 +232,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
 en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",selectAll:"Select visible",selected:"selected",clearSelection:"Clear selection",
- search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
+ search:"Search downloads…",name:"File name",addedAt:"Added",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
  proxyEnabled:"Use proxy for downloads",proxyType:"Proxy type",proxyHost:"Proxy host",proxyPort:"Proxy port",proxyUsername:"Username (optional)",proxyPassword:"Password (optional)",testProxy:"Test proxy",
@@ -239,7 +240,7 @@ en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop al
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
 fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",browserIntegration:"اتصال مرورگر",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"مرورگر را انتخاب کنید تا راهنمای نصب مرحله‌به‌مرحله باز شود. زبان راهنما مطابق زبان انتخاب‌شده در برنامه است.",browserGuideFailed:"باز کردن راهنمای نصب افزونه انجام نشد:",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",selectAll:"انتخاب موارد قابل مشاهده",selected:"انتخاب‌شده",clearSelection:"پاک کردن انتخاب",
- search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
+ search:"جستجو در دانلودها …",name:"نام فایل",addedAt:"زمان افزودن",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
  proxyEnabled:"استفاده از پراکسی برای دانلودها",proxyType:"نوع پراکسی",proxyHost:"نشانی پراکسی",proxyPort:"درگاه پراکسی",proxyUsername:"نام کاربری (اختیاری)",proxyPassword:"گذرواژه (اختیاری)",testProxy:"آزمایش پراکسی",
@@ -250,7 +251,10 @@ const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
 let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en"), completionAction=["none","shutdown","sleep"].includes(localStorage.completionAction)?localStorage.completionAction:"none";
+const SORT_KEYS=["name","addedAt","size","connections","status","timeLeft","speed"];
 let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, selectedIds=new Set(), cat="all", q="", appVersion=null;
+let sortKey=SORT_KEYS.includes(localStorage.sortKey)?localStorage.sortKey:null;
+let sortDirection=localStorage.sortDirection==="descending"?"descending":"ascending";
 const readDisplaySetting=(key,min,max,fallback)=>{
  const stored=localStorage.getItem(key);
  if(stored===null)return fallback;
@@ -289,6 +293,8 @@ window.addEventListener("storage",event=>{
  if(event.key==="windowOpacity"){windowOpacity=readDisplaySetting("windowOpacity",30,100,100);applyDisplaySettings()}
 });
 const nf=(n,d=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:d}).format(n);
+const addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":"en-US-u-ca-gregory",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+const addedAt=d=>d.added_at_ms?addedAtFormat.format(new Date(d.added_at_ms)):"—";
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function bytes(n){if(n==null)return"—";const u=["B","KB","MB","GB","TB"];let i=0;while(n>=1024&&i<4){n/=1024;i++}return nf(n,i?2:0)+" "+u[i]}
 function dur(s){if(s==null)return"—";const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
@@ -307,16 +313,26 @@ function applyLang(){
 function render(){
  const animationTime=performance.now();
  const vis=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));
+ if(sortKey){const direction=sortDirection==="ascending"?1:-1;vis.sort((a,b)=>{let av,bv;switch(sortKey){case"name":av=a.name.toLocaleLowerCase();bv=b.name.toLocaleLowerCase();break;case"addedAt":av=a.added_at_ms??null;bv=b.added_at_ms??null;break;case"size":av=a.total??null;bv=b.total??null;break;case"connections":av=a.segments.filter(s=>s.state===1).length;bv=b.segments.filter(s=>s.state===1).length;break;case"status":av=a.status;bv=b.status;break;case"timeLeft":av=a.eta??null;bv=b.eta??null;break;case"speed":av=a.speed??null;bv=b.speed??null;break;}if(av===null)return bv===null?0:1;if(bv===null)return -1;return(typeof av==="string"?av.localeCompare(bv):av-bv)*direction})}
+ document.querySelectorAll("th[data-sort]").forEach(header=>{const active=header.dataset.sort===sortKey;header.setAttribute("aria-sort",active?sortDirection:"none")});
  selectedIds=new Set([...selectedIds].filter(id=>data.some(d=>d.id===id)));
  $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
   const activeConnections=d.segments.filter(s=>s.state===1).length;
-  return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td>${bytes(d.total)}</td>
+  return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td title="${t("addedAt")}">${addedAt(d)}</td><td>${bytes(d.total)}</td>
   <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
   <td><div class="pb ${c} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
  const selectVisible=$("selectVisible");selectVisible.checked=vis.length>0&&vis.every(d=>selectedIds.has(d.id));selectVisible.indeterminate=vis.some(d=>selectedIds.has(d.id))&&!selectVisible.checked;selectVisible.title=t("selectAll");selectVisible.setAttribute("aria-label",t("selectAll"));
- $("cats").innerHTML=CATS.map(c=>`<div class="cat ${c===cat?"on":""}" data-c="${c}"><span>${t(c)}</span></div>`).join("");
+ const cats=$("cats");
+ if(cats.childElementCount!==CATS.length){
+  cats.innerHTML=CATS.map(c=>`<div class="cat" data-c="${c}"><span>${t(c)}</span></div>`).join("");
+ }
+ for(const element of cats.children){
+  const selected=element.dataset.c===cat;
+  element.firstElementChild.textContent=t(element.dataset.c);
+  element.classList.toggle("on",selected);
+ }
  const act=data.filter(d=>d.status==="downloading");
  $("sAct").textContent=t("active")+" "+nf(act.length,0);
  $("sDone").textContent=t("complete")+" "+nf(data.filter(d=>d.status==="completed").length,0);
@@ -479,6 +495,9 @@ $("paletteGrid").addEventListener("click",event=>{const option=event.target.clos
 $("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
 $("sTransparency").addEventListener("input",event=>{windowOpacity=Number(event.target.value);$("sTransparencyValue").textContent=(100-windowOpacity)+"%";applyDisplaySettings();localStorage.windowOpacity=windowOpacity});
 $("tb").addEventListener("change",e=>{const checkbox=e.target.closest("input[data-select-id]");if(!checkbox)return;const id=+checkbox.dataset.selectId;if(checkbox.checked)selectedIds.add(id);else selectedIds.delete(id);sel=id;render()});
+function sortBy(key){if(!SORT_KEYS.includes(key))return;if(sortKey===key)sortDirection=sortDirection==="ascending"?"descending":"ascending";else{sortKey=key;sortDirection="ascending"}localStorage.sortKey=sortKey;localStorage.sortDirection=sortDirection;render()}
+document.querySelector("thead").addEventListener("click",e=>{const header=e.target.closest("th[data-sort]");if(header)sortBy(header.dataset.sort)});
+document.querySelector("thead").addEventListener("keydown",e=>{const header=e.target.closest("th[data-sort]");if(header&&(e.key==="Enter"||e.key===" ")){e.preventDefault();sortBy(header.dataset.sort)}});
 $("selectVisible").addEventListener("change",e=>{const visible=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));for(const d of visible){if(e.target.checked)selectedIds.add(d.id);else selectedIds.delete(d.id)}sel=null;render()});
 $("tb").addEventListener("click",e=>{const r=e.target.closest("tr.r");if(!r||e.target.closest("input[type=checkbox]"))return;sel=+r.dataset.id;if(e.ctrlKey||e.metaKey){selectedIds.has(sel)?selectedIds.delete(sel):selectedIds.add(sel)}else{selectedIds.clear();selectedIds.add(sel)}render()});
 $("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});

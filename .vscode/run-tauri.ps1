@@ -48,6 +48,15 @@ if (-not (Get-Command cargo-tauri -ErrorAction SilentlyContinue)) {
 $tauriDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) "src-tauri"
 Push-Location $tauriDirectory
 try {
+    # The Native Messaging host is a separate Cargo binary and is not built
+    # automatically when Tauri builds the default application binary.
+    $hostBuildArgs = @('build', '--bin', 'irani-idm-native-host')
+    if ($Action -eq 'build') { $hostBuildArgs += '--release' }
+    & cargo @hostBuildArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Building the Native Messaging host failed.'
+    }
+
     & cargo tauri $Action
     exit $LASTEXITCODE
 }

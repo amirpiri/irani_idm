@@ -92,6 +92,7 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
     </div>
     <div class="stats">
       <div class="stat"><span data-i="status"></span><span id="status"></span></div>
+      <div class="stat"><span data-i="addedAt"></span><span id="addedAt"></span></div>
       <div class="stat"><span data-i="size"></span><span id="size"></span></div>
       <div class="stat"><span data-i="downloaded"></span><span id="downloaded"></span></div>
       <div class="stat"><span data-i="speed"></span><span id="speed"></span></div>
@@ -138,8 +139,8 @@ function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-font-size",readSetting("appFontSize",12,18,14)+"px");
 }
 const words={
- en:{status:"Status",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
- fa:{status:"وضعیت",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
+ en:{status:"Status",addedAt:"Added",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
+ fa:{status:"وضعیت",addedAt:"زمان افزودن",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
 };
 const t=key=>words[lang][key]||key;
 Object.assign(words.en,{resumable:"Resume supported",yes:"Yes",no:"No"});
@@ -161,6 +162,7 @@ window.addEventListener("storage",event=>{
  if(event.key==="appScale"||event.key==="appFontSize")applyDisplaySettings();
 });
 const nf=(value,digits=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:digits}).format(value);
+const addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":"en-US-u-ca-gregory",{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
 function bytes(value){
  if(value==null)return"—";
  const units=["B","KB","MB","GB","TB"];let unit=0;
@@ -236,6 +238,7 @@ function render(download){
  $("overallPct").textContent=nf(percent)+"%";
  $("overallBar").parentElement.setAttribute("aria-valuenow",String(Math.round(percent)));
  $("status").textContent=download.error||t(download.status);
+ $("addedAt").textContent=download.added_at_ms?addedAtFormat.format(new Date(download.added_at_ms)):"—";
  $("size").textContent=bytes(download.total);
  $("downloaded").textContent=bytes(download.downloaded);
  $("speed").textContent=download.status==="downloading"?bytes(download.speed)+"/s":"—";

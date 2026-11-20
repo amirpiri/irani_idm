@@ -5,6 +5,17 @@ All notable changes to Irani IDM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.13.0]
+
+### Added
+- Show when each download was added and allow sorting downloads by name, added time, size, connections, status, time left, and speed.
+- Hide temporary `.downloading` filenames in the download list and display the final file name instead.
+
+### Fixed
+- Preserve stable download group controls while status updates arrive, preventing intermittent missed clicks.
+
 ## [1.12.0]
 
 ### Added

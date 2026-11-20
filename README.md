@@ -10,6 +10,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - System tray controls on Windows, Linux, and macOS; closing a window keeps the app running in the background
 - Restore the main window's size and maximized state when the app is reopened
 - Per-download speed limit, live speed / ETA, active connections and speed in the download list
+- Sort downloads and view when each download was added
 - Download details show the server's country and flag, whether the server supports resuming, and live connection-part progress; the expanded/collapsed state is remembered per download
 - Application-wide HTTP and SOCKS5 proxy support for downloads, with optional username/password authentication
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
@@ -70,6 +71,7 @@ the Tauri CLI listed above.
 ## Run / build
 ```
 cd src-tauri
+cargo build --bin irani-idm-native-host # required before the first dev run
 cargo tauri dev                       # run
 cargo tauri build                     # installers
 ```

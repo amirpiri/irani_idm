@@ -46,6 +46,7 @@ enum Status {
 
 struct Item {
     url: String,
+    added_at_ms: u64,
     server_ip: Option<String>,
     server_country: Option<String>,
     server_country_code: Option<String>,
@@ -130,6 +131,8 @@ struct Saved {
     id: u64,
     url: String,
     #[serde(default)]
+    added_at_ms: u64,
+    #[serde(default)]
     server_ip: Option<String>,
     #[serde(default)]
     server_country: Option<String>,
@@ -166,6 +169,7 @@ pub struct SegView { done: u64, total: Option<u64>, state: u8 }
 pub struct View {
     pub id: u64,
     pub name: String,
+    pub added_at_ms: u64,
     url: String,
     server_country: Option<String>,
     server_country_code: Option<String>,
@@ -289,7 +293,7 @@ impl Manager {
             map.insert(
                 s.id,
                 Item {
-                    url: s.url, path: s.path, total: s.total, resumable: s.resumable, status,
+                    url: s.url, added_at_ms: s.added_at_ms, path: s.path, total: s.total, resumable: s.resumable, status,
                     server_ip: s.server_ip,
                     server_country: s.server_country,
                     server_country_code: s.server_country_code,
@@ -381,6 +385,7 @@ impl Manager {
             .map(|(id, it)| Saved {
                 id: *id,
                 url: it.url.clone(),
+                added_at_ms: it.added_at_ms,
                 server_ip: it.server_ip.clone(),
                 server_country: it.server_country.clone(),
                 server_country_code: it.server_country_code.clone(),
@@ -441,7 +446,8 @@ impl Manager {
         };
         View {
             id,
-            name: it.path.file_name().map(|n| n.to_string_lossy().into()).unwrap_or_default(),
+            name: display_file_name(&it.path),
+            added_at_ms: it.added_at_ms,
             url: it.url.clone(),
             server_country: it.server_country.clone(),
             server_country_code: it.server_country_code.clone(),
@@ -485,6 +491,7 @@ impl Manager {
                 id,
                 Item {
                     url,
+                    added_at_ms: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64,
                     server_ip: None,
                     server_country: None,
                     server_country_code: None,
@@ -1181,6 +1188,15 @@ fn complete_download_file(temporary_path: &Path) -> Result<PathBuf, String> {
     Ok(final_path)
 }
 
+fn display_file_name(path: &Path) -> String {
+    path.file_name()
+        .map(|name| {
+            let name = name.to_string_lossy();
+            name.strip_suffix(".downloading").unwrap_or(name.as_ref()).to_string()
+        })
+        .unwrap_or_default()
+}
+
 fn url_name(url: &url::Url) -> String {
     url.path_segments()
         .and_then(Iterator::last)
@@ -1393,6 +1409,7 @@ mod tests {
             id,
             Item {
                 url: "https://example.test/download.bin".into(),
+                added_at_ms: 0,
                 server_ip: None,
                 server_country: None,
                 server_country_code: None,
@@ -1561,6 +1578,12 @@ mod tests {
     }
 
     #[test]
+    fn temporary_download_suffix_is_hidden_from_display_name() {
+        assert_eq!(display_file_name(Path::new("movie.mp4.downloading")), "movie.mp4");
+        assert_eq!(display_file_name(Path::new("movie.mp4")), "movie.mp4");
+    }
+
+    #[test]
     fn completion_does_not_overwrite_an_existing_final_file() {
         let dir = std::env::temp_dir().join(format!(
             "irani-idm-collision-test-{}-{}",
@@ -1599,6 +1622,7 @@ mod tests {
         let saved = Saved {
             id: 1,
             url: "https://example.test/legacy.zip".into(),
+            added_at_ms: 0,
             server_ip: None,
             server_country: None,
             server_country_code: None,
