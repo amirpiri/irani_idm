@@ -29,7 +29,7 @@ the file and manages its connections, progress, pause, and resume.
 
 **Requirements and limitations**
 
-- Irani IDM for Windows must be installed, launched, and have its Native Messaging host registered for the extension.
+- Irani IDM for Windows must be installed and launched. It installs the Native Messaging host automatically; restart Irani IDM after installing the extension so it can register the extension ID.
 - The extension handles HTTP and HTTPS downloads.
 - URLs can include private query parameters or temporary access tokens. The
   desktop app stores download URLs in its local download history.
@@ -90,7 +90,7 @@ browser integration; pause resume; download helper; Irani IDM
 
 ## Certification notes
 
-Install and launch Irani IDM first so its Native Messaging host is registered.
+Install and launch Irani IDM first. After installing this extension, restart Irani IDM to register it with the automatically installed Native Messaging host.
 Install the extension, open its Options page, enable handoff, and initiate a
 test HTTP/HTTPS download. Verify that Irani IDM receives the URL without an
 external-protocol tab or prompt. Disable handoff and verify that the next

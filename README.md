@@ -95,9 +95,9 @@ description. If a matching version section is missing, it uses `Unreleased`.
 
 ## Browser integration (Chrome / Edge / Firefox)
 
-1. Install Irani IDM and launch it once so Windows can register the `iranidm://` URL handler (this also works with the portable build).
+1. Install Irani IDM and launch it once so Windows can register the `iranidm://` URL handler and install the bundled Native Messaging host (this also works with the portable build).
 2. Open **Settings → General → Browser integration** and choose Chrome, Edge, or Firefox. The app opens the matching step-by-step guide in the language currently selected in Settings. The guides explain how to download the correct release ZIP, extract it, and load it in the browser.
-3. Chrome and Edge load the extracted extension folder with **Developer mode → Load unpacked**. Firefox 140 or later loads `manifest.json` through **Load Temporary Add-on…**; Firefox removes temporary add-ons when it closes. Permanent Firefox installation requires the signed AMO version after publication.
+3. Chrome and Edge load the extracted extension folder with **Developer mode → Load unpacked**. Restart Irani IDM after loading it; the app discovers the extension ID and registers Native Messaging automatically. Firefox 140 or later loads `manifest.json` through **Load Temporary Add-on…**; Firefox removes temporary add-ons when it closes. Permanent Firefox installation requires the signed AMO version after publication.
 4. After installation, review the extension's first-run consent page. Download handoff is disabled until the user explicitly enables it. Use the Irani IDM toolbar button to turn download catching on or off at any time; the full Options page remains available for privacy details. If no choice has been saved and the user starts a download, the extension opens Options once to remind them; it never enables handoff automatically. Firefox additionally asks for its optional download-URL and download-action data permissions; handoff stays disabled if either is denied or revoked. Once enabled, HTTP/HTTPS downloads started in the browser are handed to Irani IDM and saved in the app's Downloads folder using its default eight connections. Turning handoff off leaves downloads in the browser. Links requiring an authenticated browser session, cookies, or browser-only headers may not be downloadable by the app.
 
 The complete [English and Persian browser installation guides](docs/extensions/README.md) are also available directly in the repository.
@@ -118,9 +118,9 @@ graphics are maintained under `browser-extension/`. See
 commands and the browser-specific listing files. Official store links will be
 added here after approval and publication.
 
-The Windows portable ZIP contains `irani-idm.exe`; extract it and run the executable
-without installing the app. Windows WebView2 Runtime is still required (it is
-preinstalled on most Windows 10/11 systems).
+The Windows portable ZIP contains `irani-idm.exe` and its `irani-idm-native-host.exe`
+companion; keep both files together when extracting and running the app. Windows
+WebView2 Runtime is still required (it is preinstalled on most Windows 10/11 systems).
 
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.
 

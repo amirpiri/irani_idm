@@ -55,6 +55,7 @@ th{position:sticky;top:0;background:var(--card-glass);text-align:start;padding:8
 td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td:nth-child(5),td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
 tr.r{cursor:default}tr.r.sel{background:var(--sel-glass)}
+th.pick,td.pick{width:38px;text-align:center;padding-inline:5px}td.pick input,th.pick input{width:16px;height:16px;accent-color:var(--ac);cursor:pointer}
 td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg-glass);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;position:relative;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
@@ -138,11 +139,11 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
   <div id="content">
     <div id="top">
-      <div class="stat" id="sAct"></div><div class="stat" id="sDone"></div>
+      <div class="stat" id="sAct"></div><div class="stat" id="sDone"></div><div class="stat" id="sSelected" hidden></div>
       <input id="q" data-p="search" oninput="q=this.value.toLowerCase();render()">
     </div>
-    <div id="tw"><table><colgroup><col style="width:32%"><col style="width:13%"><col style="width:12%"><col style="width:19%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr>
-      <th data-i="name"></th><th data-i="size"></th><th data-i="connections"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
+    <div id="tw"><table><colgroup><col style="width:38px"><col style="width:30%"><col style="width:12%"><col style="width:11%"><col style="width:18%"><col style="width:11%"><col style="width:11%"></colgroup><thead><tr>
+      <th class="pick"><input id="selectVisible" type="checkbox" aria-label="Select visible downloads" title="Select visible downloads"></th><th data-i="name"></th><th data-i="size"></th><th data-i="connections"></th><th data-i="status"></th><th data-i="timeLeft"></th><th data-i="speed"></th>
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </div>
@@ -229,7 +230,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",
+en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",selectAll:"Select visible",selected:"selected",clearSelection:"Clear selection",
  search:"Search downloads…",name:"File name",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
@@ -237,7 +238,7 @@ en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop al
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",browserIntegration:"اتصال مرورگر",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"مرورگر را انتخاب کنید تا راهنمای نصب مرحله‌به‌مرحله باز شود. زبان راهنما مطابق زبان انتخاب‌شده در برنامه است.",browserGuideFailed:"باز کردن راهنمای نصب افزونه انجام نشد:",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",
+fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",browserIntegration:"اتصال مرورگر",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"مرورگر را انتخاب کنید تا راهنمای نصب مرحله‌به‌مرحله باز شود. زبان راهنما مطابق زبان انتخاب‌شده در برنامه است.",browserGuideFailed:"باز کردن راهنمای نصب افزونه انجام نشد:",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",selectAll:"انتخاب موارد قابل مشاهده",selected:"انتخاب‌شده",clearSelection:"پاک کردن انتخاب",
  search:"جستجو در دانلودها …",name:"نام فایل",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -249,7 +250,7 @@ const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
 let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en"), completionAction=["none","shutdown","sleep"].includes(localStorage.completionAction)?localStorage.completionAction:"none";
-let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, cat="all", q="", appVersion=null;
+let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, selectedIds=new Set(), cat="all", q="", appVersion=null;
 const readDisplaySetting=(key,min,max,fallback)=>{
  const stored=localStorage.getItem(key);
  if(stored===null)return fallback;
@@ -306,17 +307,20 @@ function applyLang(){
 function render(){
  const animationTime=performance.now();
  const vis=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));
+ selectedIds=new Set([...selectedIds].filter(id=>data.some(d=>d.id===id)));
  $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
   const activeConnections=d.segments.filter(s=>s.state===1).length;
-  return `<tr class="r ${d.id===sel?"sel":""}" data-id="${d.id}"><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td>${bytes(d.total)}</td>
+  return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td>${bytes(d.total)}</td>
   <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
   <td><div class="pb ${c} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
+ const selectVisible=$("selectVisible");selectVisible.checked=vis.length>0&&vis.every(d=>selectedIds.has(d.id));selectVisible.indeterminate=vis.some(d=>selectedIds.has(d.id))&&!selectVisible.checked;selectVisible.title=t("selectAll");selectVisible.setAttribute("aria-label",t("selectAll"));
  $("cats").innerHTML=CATS.map(c=>`<div class="cat ${c===cat?"on":""}" data-c="${c}"><span>${t(c)}</span></div>`).join("");
  const act=data.filter(d=>d.status==="downloading");
  $("sAct").textContent=t("active")+" "+nf(act.length,0);
  $("sDone").textContent=t("complete")+" "+nf(data.filter(d=>d.status==="completed").length,0);
+ $("sSelected").hidden=selectedIds.size===0;$("sSelected").textContent=nf(selectedIds.size,0)+" "+t("selected");
  if(!$("rowMenu").hidden)renderRowMenu();
 }
 function hideRowMenu(){$("rowMenu").hidden=true}
@@ -335,18 +339,20 @@ async function resumeDownload(id){
  try{await invoke("open_download_window",{id});await invoke("resume",{id})}
  catch(e){alert(String(e))}
 }
-const resumeSelected=()=>{if(sel!=null)resumeDownload(sel)};
-const act=c=>sel!=null&&invoke(c,{id:sel});
+const resumeSelected=async()=>{const ids=selectedIds.size?[...selectedIds]:sel==null?[]:[sel];for(const id of ids){const d=data.find(x=>x.id===id);if(d&&["paused","error"].includes(d.status))await resumeDownload(id)}};
+const act=async c=>{const ids=selectedIds.size?[...selectedIds]:sel==null?[]:[sel];for(const id of ids){const d=data.find(x=>x.id===id);if(d&&d.status==="downloading")await invoke(c,{id})}};
 async function del(){
- if(sel==null)return;
+ if(!selectedIds.size&&sel!=null)selectedIds.add(sel);if(!selectedIds.size)return;
  $("dDelete").showModal();
 }
 async function removeSelected(deleteFile){
- if(sel==null)return;
- const id=sel;
+ const ids=[...selectedIds];if(!ids.length)return;
  $("dDelete").close();
- try{await invoke("remove",{id,deleteFile});if(sel===id)sel=null;render()}
- catch(error){alert(String(error))}
+ const results=await Promise.allSettled(ids.map(id=>invoke("remove",{id,deleteFile})));
+ const failed=results.map((result,index)=>({result,id:ids[index]})).filter(x=>x.result.status==="rejected");
+ for(const id of ids)if(!failed.some(x=>x.id===id))selectedIds.delete(id);
+ if(sel!=null&&!data.some(d=>d.id===sel&&!selectedIds.has(sel)))sel=null;
+ render();if(failed.length)alert(failed.map(x=>`${data.find(d=>d.id===x.id)?.name||x.id}: ${x.result.reason}`).join("\n"));
 }
 async function delDone(){
  try{await Promise.all(data.filter(d=>d.status==="completed").map(d=>invoke("remove",{id:d.id,deleteFile:false})))}
@@ -472,12 +478,14 @@ $("sScale").addEventListener("input",event=>{$("sScaleValue").textContent=event.
 $("paletteGrid").addEventListener("click",event=>{const option=event.target.closest("[data-palette]");if(option)choosePalette(option.dataset.palette)});
 $("sFontSize").addEventListener("input",event=>{$("sFontSizeValue").textContent=event.target.value+" px"});
 $("sTransparency").addEventListener("input",event=>{windowOpacity=Number(event.target.value);$("sTransparencyValue").textContent=(100-windowOpacity)+"%";applyDisplaySettings();localStorage.windowOpacity=windowOpacity});
-$("tb").addEventListener("click",e=>{const r=e.target.closest("tr");if(r){sel=+r.dataset.id;render()}});
+$("tb").addEventListener("change",e=>{const checkbox=e.target.closest("input[data-select-id]");if(!checkbox)return;const id=+checkbox.dataset.selectId;if(checkbox.checked)selectedIds.add(id);else selectedIds.delete(id);sel=id;render()});
+$("selectVisible").addEventListener("change",e=>{const visible=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));for(const d of visible){if(e.target.checked)selectedIds.add(d.id);else selectedIds.delete(d.id)}sel=null;render()});
+$("tb").addEventListener("click",e=>{const r=e.target.closest("tr.r");if(!r||e.target.closest("input[type=checkbox]"))return;sel=+r.dataset.id;if(e.ctrlKey||e.metaKey){selectedIds.has(sel)?selectedIds.delete(sel):selectedIds.add(sel)}else{selectedIds.clear();selectedIds.add(sel)}render()});
 $("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});
 document.documentElement.append($("rowMenu"));
 $("tb").addEventListener("contextmenu",e=>{
  const r=e.target.closest("tr.r");if(!r)return;
- e.preventDefault();sel=+r.dataset.id;render();
+ e.preventDefault();sel=+r.dataset.id;if(!selectedIds.has(sel)){selectedIds.clear();selectedIds.add(sel)}render();
  const menu=$("rowMenu");menu.hidden=false;renderRowMenu();
  const rect=menu.getBoundingClientRect();
  menu.style.left=Math.max(8,Math.min(e.clientX,innerWidth-rect.width-8))+"px";

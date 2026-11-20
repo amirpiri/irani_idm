@@ -62,7 +62,18 @@ jobs:
             cd src-tauri && cargo tauri icon ../app-icon.png
           fi
 
-      - name: Build installers
+      - name: Build Windows installers
+        if: runner.os == 'Windows'
+        working-directory: src-tauri
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          NO_STRIP: "true"
+        run: |
+          cargo build --release --bin irani-idm-native-host
+          cargo tauri build --bundles ${{ matrix.bundles }}
+
+      - name: Build non-Windows installers
+        if: runner.os != 'Windows'
         working-directory: src-tauri
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
@@ -74,7 +85,7 @@ jobs:
         shell: pwsh
         run: |
           Compress-Archive `
-            -Path "src-tauri/target/release/irani-idm.exe" `
+            -Path "src-tauri/target/release/irani-idm.exe", "src-tauri/target/release/irani-idm-native-host.exe" `
             -DestinationPath "src-tauri/target/release/Irani-IDM-windows-portable.zip" `
             -Force
 

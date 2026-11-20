@@ -293,6 +293,168 @@ fn downloads_dir() -> Option<PathBuf> {
 }
 
 #[cfg(windows)]
+fn install_native_messaging_host(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use std::{
+        collections::hash_map::DefaultHasher,
+        hash::{Hash, Hasher},
+        io::ErrorKind,
+    };
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+
+    const HOST_NAME: &str = "com.iranidm.browser";
+    const EXTENSION_NAME: &str = "Irani IDM Browser Integration";
+    const EXTENSION_HOMEPAGE: &str = "https://github.com/amirpiri/irani_idm";
+
+    let Some(local_data) = dirs::data_local_dir() else {
+        return Err("Could not locate the local application data directory".into());
+    };
+    let native_dir = local_data
+        .join("com.iranidm.desktop")
+        .join("native-messaging");
+    std::fs::create_dir_all(&native_dir)?;
+
+    let bundled_host = app.path().resource_dir()?.join("irani-idm-native-host.exe");
+    if !bundled_host.is_file() {
+        return Err(format!(
+            "Bundled Native Messaging host was not found at {}",
+            bundled_host.display()
+        )
+        .into());
+    }
+    let bundled_bytes = std::fs::read(&bundled_host)?;
+    let mut hasher = DefaultHasher::new();
+    bundled_bytes.hash(&mut hasher);
+    let installed_host = native_dir.join(format!(
+        "irani-idm-native-host-{:016x}.exe",
+        hasher.finish()
+    ));
+    if !installed_host.is_file() {
+        std::fs::write(&installed_host, bundled_bytes)?;
+    }
+    for entry in std::fs::read_dir(&native_dir)?.flatten() {
+        let path = entry.path();
+        let is_old_host = entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with("irani-idm-native-host-");
+        if is_old_host && path != installed_host {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+
+    let executable = std::env::current_exe()?;
+    std::fs::write(
+        native_dir.join("app-path.txt"),
+        executable.to_string_lossy().as_bytes(),
+    )?;
+
+    let browsers = [
+        (
+            "Google\\Chrome\\User Data",
+            "Software\\Google\\Chrome\\NativeMessagingHosts",
+        ),
+        (
+            "Microsoft\\Edge\\User Data",
+            "Software\\Microsoft\\Edge\\NativeMessagingHosts",
+        ),
+    ];
+    let mut allowed_origins = Vec::new();
+    let mut browser_registry_paths = Vec::new();
+    for (profile_root, registry_root) in browsers {
+        let Some(local_app_data) = dirs::data_local_dir() else {
+            continue;
+        };
+        let profiles_dir = local_app_data.join(profile_root);
+        let Ok(profiles) = std::fs::read_dir(profiles_dir) else {
+            continue;
+        };
+        let mut browser_has_extension = false;
+        for profile in profiles.flatten().filter(|entry| entry.path().is_dir()) {
+            let preferences = profile.path().join("Secure Preferences");
+            let Ok(contents) = std::fs::read_to_string(preferences) else {
+                continue;
+            };
+            let Ok(settings) = serde_json::from_str::<serde_json::Value>(&contents) else {
+                continue;
+            };
+            let Some(extensions) = settings
+                .pointer("/extensions/settings")
+                .and_then(serde_json::Value::as_object)
+            else {
+                continue;
+            };
+            for (extension_id, extension) in extensions {
+                let Some(install_path) = extension.get("path").and_then(serde_json::Value::as_str)
+                else {
+                    continue;
+                };
+                let installed_manifest = Path::new(install_path).join("manifest.json");
+                let Ok(manifest_text) = std::fs::read_to_string(installed_manifest) else {
+                    continue;
+                };
+                let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&manifest_text) else {
+                    continue;
+                };
+                if manifest.get("name").and_then(serde_json::Value::as_str) == Some(EXTENSION_NAME)
+                    && manifest
+                        .get("homepage_url")
+                        .and_then(serde_json::Value::as_str)
+                        == Some(EXTENSION_HOMEPAGE)
+                {
+                    let origin = format!("chrome-extension://{extension_id}/");
+                    if !allowed_origins.contains(&origin) {
+                        allowed_origins.push(origin);
+                    }
+                    browser_has_extension = true;
+                }
+            }
+        }
+        if browser_has_extension {
+            browser_registry_paths.push(registry_root);
+        }
+    }
+
+    if !allowed_origins.is_empty() {
+        let host_manifest = native_dir.join(format!("{HOST_NAME}.json"));
+        let manifest = serde_json::json!({
+            "name": HOST_NAME,
+            "description": "Passes explicitly enabled browser downloads to Irani IDM on this computer.",
+            "path": installed_host,
+            "type": "stdio",
+            "allowed_origins": allowed_origins
+        });
+        let temporary_manifest = host_manifest.with_extension("json.tmp");
+        std::fs::write(&temporary_manifest, serde_json::to_vec_pretty(&manifest)?)?;
+        match std::fs::rename(&temporary_manifest, &host_manifest) {
+            Ok(()) => {}
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => {
+                std::fs::remove_file(&host_manifest)?;
+                std::fs::rename(&temporary_manifest, &host_manifest)?;
+            }
+            Err(error) => return Err(error.into()),
+        }
+
+        let registry = RegKey::predef(HKEY_CURRENT_USER);
+        for registry_root in &browser_registry_paths {
+            let key = registry
+                .create_subkey(format!("{registry_root}\\{HOST_NAME}"))?
+                .0;
+            key.set_value("", &host_manifest.to_string_lossy().to_string())?;
+        }
+    }
+
+    if browser_registry_paths.is_empty() {
+        eprintln!("Irani IDM Native Messaging host installed; no matching Chrome or Edge extension was found yet.");
+    } else {
+        eprintln!(
+            "Irani IDM Native Messaging host registered for {} browser(s).",
+            browser_registry_paths.len()
+        );
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
 const NATIVE_MESSAGING_PIPE: &str = r"\\.\pipe\irani-idm-native-messaging-v1";
 
 #[cfg(windows)]
@@ -362,7 +524,11 @@ fn start_native_messaging_server(app: tauri::AppHandle, manager: Manager) {
                     .add(parsed.to_string(), directory, 8)
                     .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
                 let _ = app.emit("downloads", manager.views(0.5));
-                restore_app_windows(&app);
+                if let Err(error) =
+                    open_download_window(app.clone(), app.state::<Manager>(), id).await
+                {
+                    eprintln!("Could not open browser download details: {error}");
+                }
                 eprintln!("Accepted browser download through Native Messaging (download id {id}).");
                 Ok::<(), std::io::Error>(())
             }
@@ -419,10 +585,6 @@ fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), Str
     tauri::async_runtime::spawn(async move {
         if let Err(error) = open_download_window(app.clone(), app.state::<Manager>(), id).await {
             eprintln!("Could not open download details: {error}");
-        }
-        if let Some(window) = app.get_webview_window("main") {
-            let _ = window.show();
-            let _ = window.set_focus();
         }
     });
     Ok(())
@@ -658,17 +820,8 @@ pub fn run() {
             std::fs::create_dir_all(&dir)?;
             #[cfg(windows)]
             {
-                if let (Some(local_data), Ok(executable)) =
-                    (dirs::data_local_dir(), std::env::current_exe())
-                {
-                    let native_dir = local_data
-                        .join("com.iranidm.desktop")
-                        .join("native-messaging");
-                    std::fs::create_dir_all(&native_dir)?;
-                    std::fs::write(
-                        native_dir.join("app-path.txt"),
-                        executable.to_string_lossy().as_bytes(),
-                    )?;
+                if let Err(error) = install_native_messaging_host(app) {
+                    eprintln!("Could not install the Irani IDM Native Messaging host: {error}");
                 }
             }
             let mgr = Manager::load(&dir);

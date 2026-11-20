@@ -1,6 +1,6 @@
 # Install the Irani IDM extension in Google Chrome
 
-These instructions install the extension from the official Irani IDM GitHub release. Irani IDM for Windows must be installed and launched at least once before browser downloads can be handed to it.
+These instructions install the extension from the official Irani IDM GitHub release. Install and launch Irani IDM for Windows once before loading the extension. The app installs and registers its Native Messaging host automatically when it starts; restart the app after loading the extension so it can discover the extension ID.
 
 ## 1. Download the extension
 
@@ -22,11 +22,9 @@ These instructions install the extension from the official Irani IDM GitHub rele
 4. Select the extracted extension folder — the folder containing `manifest.json` — and confirm.
 5. Check that **Irani IDM Browser Integration** appears in your extensions list.
 
-## 4. Register the Native Messaging host
+## 4. Finish Native Messaging setup
 
-1. Open the Irani IDM project folder in File Explorer or PowerShell.
-2. From the project folder, run `powershell -ExecutionPolicy Bypass -File .\browser-extension\register-native-host.ps1`. This builds and registers the local Native Messaging host for the Chrome/Edge profiles where this unpacked extension is loaded. It writes the registration under your Windows user account; administrator access is not required.
-3. Restart Irani IDM. Keep the extension loaded from the same folder so its extension ID remains unchanged.
+Close and reopen Irani IDM after loading the extension. On startup, the app detects the extension in Chrome profiles and registers its Native Messaging host automatically. No separate script or administrator access is required. Keep the extension loaded from the same folder so its extension ID remains unchanged.
 
 ## 5. Pin the extension (optional)
 
@@ -50,7 +48,7 @@ You can change the handoff setting at any time from `chrome://extensions` → **
 - **The extension disappears or stops working after moving files:** Load it again from its new permanent folder.
 - **An update is available:** Download and extract the new ZIP, open `chrome://extensions`, and click the extension's reload button after replacing the old folder contents. If needed, remove the old extension and load the new folder.
 - **Downloads stay in Chrome:** Check that handoff is enabled in Extension options and Irani IDM is running. Browser-only cookies, authentication, or custom headers may prevent some downloads from working in the desktop app.
-- **Native Messaging host not found:** Run the registration command above again after loading the unpacked extension. If you moved or reloaded it from a different folder, run the script again so the registered extension ID matches.
+- **Native Messaging host not found:** Restart Irani IDM after loading or updating the extension. If you moved or reloaded an unpacked extension from a different folder, restart the app again so it can discover the current extension ID.
 - **The consent checkbox is unchecked or handoff was turned off:** Open `chrome://extensions` → **Irani IDM Browser Integration** → **Extension options**. Read the data-transfer notice, tick the consent checkbox, and click **Save preference**. If you start a download before making a choice, the extension opens this page once to remind you; it never enables handoff automatically. If you previously saved the checkbox as unchecked, open Options yourself to change that choice.
 - **The checkbox or Options page seems missing:** Open `chrome://extensions`, make sure Irani IDM Browser Integration is enabled, click its reload icon, then open **Extension options**. If it is not listed, load the extracted extension folder again using **Load unpacked**.
 
