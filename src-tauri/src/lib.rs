@@ -84,6 +84,8 @@ impl CompletionTracker {
 struct GitHubRelease {
     tag_name: String,
     html_url: String,
+    #[serde(default)]
+    body: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -91,6 +93,7 @@ struct UpdateInfo {
     current_version: String,
     latest_version: String,
     download_url: String,
+    release_notes: String,
 }
 
 fn release_version(tag: &str) -> Result<Version, String> {
@@ -285,6 +288,7 @@ async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, S
         current_version,
         latest_version: release.tag_name,
         download_url: release.html_url,
+        release_notes: release.body.unwrap_or_default(),
     }))
 }
 

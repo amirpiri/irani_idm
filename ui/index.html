@@ -37,7 +37,7 @@ body{zoom:var(--app-scale);font:var(--app-font-size) "Vazirmatn","Segoe UI",Taho
 button,input,select,textarea{font:inherit;color:inherit}
 #bar{display:flex;gap:2px;padding:8px 10px;background:var(--card-glass);border-bottom:1px solid var(--bd);flex-wrap:wrap}
 .tb{background:none;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
-.tb:hover{background:var(--bg-glass)}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
+.tb:hover:not(:disabled){background:var(--bg-glass)}.tb:disabled{opacity:.6;cursor:wait}.tb svg{width:24px;height:24px;display:block;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tb svg .icon-bg{stroke:none}.tb svg .icon-solid{stroke:none}.tb span{font-size:calc(var(--app-font-size)*.857)}
 .sep{width:1px;background:var(--bd);margin:4px 6px}
 #main{flex:1;display:flex;min-height:0}
 #appVersion{padding:4px 12px;color:var(--mut);font-size:.8em;text-align:end;direction:ltr;user-select:text}
@@ -65,12 +65,15 @@ td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 @keyframes progress-glow{from{filter:brightness(1);box-shadow:0 0 3px color-mix(in srgb,var(--ac) 35%,transparent)}to{filter:brightness(1.3);box-shadow:0 0 12px color-mix(in srgb,var(--ac) 75%,transparent)}}
 @keyframes progress-stripes{from{background-position:1rem 0}to{background-position:0 0}}
 @media(prefers-reduced-motion:reduce){.pb.active>div,.pb.active>div::after{animation:none}.pb>div{transition:none}}
-.pb b{position:absolute;inset:0;text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px}
+.pb b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx);text-align:center;font-size:calc(var(--app-font-size)*.786);line-height:16px;pointer-events:none}
+.pb.is-over-half b{color:color-mix(in srgb,var(--tx) 10%,#000);font-weight:700;text-shadow:0 0 2px var(--card),0 0 4px var(--card)}
+:root[data-theme="dark"] .pb.is-over-half b{color:var(--tx);text-shadow:0 0 2px var(--card),0 0 4px var(--card)}
 .proxy-badge{display:inline-flex;align-items:center;gap:3px;margin-inline-start:7px;padding:1px 6px;border:1px solid color-mix(in srgb,var(--ok) 45%,var(--bd));border-radius:999px;background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--ok);font-size:.78em;font-weight:600;vertical-align:middle}
 .proxy-badge[hidden]{display:none!important}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card-glass);color:var(--tx);padding:16px;width:min(620px,94vw);max-height:90vh;overflow-y:auto}
 dialog::backdrop{background:#0006}
 dialog h3{margin:0 0 10px}
+.update-notes{max-height:42vh;overflow:auto;margin:12px 0;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-glass);white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;direction:auto;line-height:1.6}
 .settings-tabs{display:flex;gap:6px;padding:4px;margin-bottom:12px;border-bottom:1px solid var(--bd)}
 .settings-tab{flex:1;padding:9px 12px;border:0;border-bottom:2px solid transparent;border-radius:7px 7px 0 0;background:transparent;color:var(--mut);cursor:pointer}
 .settings-tab:hover{background:var(--bg-glass);color:var(--tx)}
@@ -135,6 +138,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <button class="tb" onclick="openSet()"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="m9.7 2.8 4.6 0 .6 2.1 1.7 1 2.1-.6 2.3 4-1.5 1.6v2l1.5 1.7-2.3 4-2.1-.7-1.7 1-.6 2.1H9.7L9 18.9l-1.7-1-2.1.7-2.3-4 1.5-1.7v-2L2.9 9.3l2.3-4 2.1.6 1.7-1z" fill="#e7edfa"/><circle cx="12" cy="12" r="3.3" fill="#fff" stroke="#6579a8"/></svg><span data-i="settings"></span></button>
   <button class="tb" onclick="invoke('resume_all')"><svg aria-hidden="true" viewBox="0 0 24 24"><path class="icon-bg" d="M4 15h16l-1 6H5z" fill="#dceeff"/><path d="M12 2v12m-5-5 5 5 5-5m-2 2 2 3" stroke="#2378c8" stroke-width="2"/><path d="M4 15h16" stroke="#2378c8"/></svg><span data-i="startQ"></span></button>
   <button class="tb" onclick="openProjectPage()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 5H5v14h14v-4M13 5h6v6M19 5l-9 9"/></svg><span data-i="projectPage"></span></button>
+  <button class="tb" id="checkUpdateButton" onclick="checkForUpdate(true)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg><span data-i="checkUpdate"></span></button>
 </div>
 <div id="main">
   <div id="side"><h4 data-i="groups"></h4><div id="cats"></div></div>
@@ -210,6 +214,8 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <p data-i="updatePrompt"></p>
   <div class="row"><span data-i="currentVersion"></span><strong id="currentVersion"></strong></div>
   <div class="row"><span data-i="latestVersion"></span><strong id="latestVersion"></strong></div>
+  <h4 data-i="releaseNotes" style="margin:14px 0 6px"></h4>
+  <div id="updateNotes" class="update-notes"></div>
   <div class="acts">
     <button class="btn" onclick="$('dUpdate').close()" data-i="later"></button>
     <button class="btn p" onclick="openUpdatePage()" data-i="downloadUpdate"></button>
@@ -231,7 +237,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 <script>
 const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
 const T={
-en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Open its release page to download it?",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",selectAll:"Select visible",selected:"selected",clearSelection:"Clear selection",
+en:{version:"Version",checkUpdate:"Check for updates",checkingUpdates:"Checking…",upToDate:"You're using the latest version.",updateCheckFailed:"Could not check for updates:",releaseNotes:"What's new",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Review the changes and open its release page to download it.",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",selectAll:"Select visible",selected:"selected",clearSelection:"Clear selection",
  search:"Search downloads…",name:"File name",addedAt:"Added",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
  addTitle:"Add download",addHint:"One URL per line",ok:"OK",cancel:"Cancel",close:"Close",language:"Language",conns:"Connections per download",folder:"Save folder",browse:"Browse…",
  limit:"Speed limit (0 = unlimited)",resumable:"Resumable",yes:"Yes",no:"No",openFile:"Open file",openFolder:"Open folder",details:"Download details",copyUrl:"Copy download URL",copyFailed:"Could not copy the download URL.",
@@ -239,7 +245,7 @@ en:{version:"Version",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop al
  all:"All downloads",compressed:"Compressed",documents:"Documents",music:"Music",programs:"Programs",video:"Video",images:"Images",unfinished:"Unfinished",completed:"Completed",
  st_preparing:"Preparing…",st_downloading:"Downloading",st_paused:"Paused",st_completed:"Completed",st_error:"Error",rx:"Receiving…",done:"Done",wait:"Waiting",
  active:"Active",complete:"Complete",pauseB:"Pause",resumeB:"Resume",delFile:"Also delete the file(s) from disk?",h:"h",m:"m",s:"s"},
-fa:{version:"نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. صفحهٔ انتشار برای دریافت آن باز شود؟",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",browserIntegration:"اتصال مرورگر",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"مرورگر را انتخاب کنید تا راهنمای نصب مرحله‌به‌مرحله باز شود. زبان راهنما مطابق زبان انتخاب‌شده در برنامه است.",browserGuideFailed:"باز کردن راهنمای نصب افزونه انجام نشد:",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",selectAll:"انتخاب موارد قابل مشاهده",selected:"انتخاب‌شده",clearSelection:"پاک کردن انتخاب",
+fa:{version:"نسخه",checkUpdate:"بررسی به‌روزرسانی",checkingUpdates:"در حال بررسی…",upToDate:"از آخرین نسخه استفاده می‌کنید.",updateCheckFailed:"بررسی به‌روزرسانی انجام نشد:",releaseNotes:"تغییرات نسخه",add:"آدرس",resume:"ادامه",stop:"توقف",stopAll:"توقف همه",del:"حذف",delDone:"حذف تکمیل‌ها",settings:"تنظیمات",general:"عمومی",proxy:"پراکسی",proxyUsed:"با پراکسی",startQ:"آغاز صف",projectPage:"گیت‌هاب",updateTitle:"نسخهٔ جدید موجود است",updatePrompt:"نسخهٔ جدیدی در دسترس است. تغییرات را ببینید و برای دریافت آن صفحهٔ انتشار را باز کنید.",currentVersion:"نسخهٔ فعلی",latestVersion:"آخرین نسخه",later:"بعداً",downloadUpdate:"باز کردن صفحهٔ دریافت",groups:"گروه ها",connections:"اتصال‌ها",appearance:"حالت نمایش",colorTheme:"رنگ‌بندی",transparency:"شفافیت",completionAction:"پس از پایان همه دانلودها",actionNone:"هیچ‌کاری انجام نشود",actionShutdown:"خاموش کردن سیستم",actionSleep:"حالت خواب",browserIntegration:"اتصال مرورگر",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"مرورگر را انتخاب کنید تا راهنمای نصب مرحله‌به‌مرحله باز شود. زبان راهنما مطابق زبان انتخاب‌شده در برنامه است.",browserGuideFailed:"باز کردن راهنمای نصب افزونه انجام نشد:",paletteOcean:"اقیانوس",paletteViolet:"بنفش",paletteEmerald:"زمردی",paletteSunset:"غروب",paletteRose:"رز",paletteCyan:"قطبی",paletteAmber:"کهربایی",paletteIndigo:"نیلی",paletteMint:"نعنایی",paletteCoral:"مرجانی",paletteGraphite:"ذغالی",themeSystem:"مطابق سیستم",themeLight:"حالت روز",themeDark:"حالت شب",uiScale:"مقیاس رابط کاربری",fontSize:"اندازه قلم",deleteTitle:"حذف دانلود",deleteHint:"انتخاب کنید فایل دانلودشده هم حذف شود یا نه.",removeOnly:"فقط حذف از فهرست",deleteFile:"حذف فایل",selectAll:"انتخاب موارد قابل مشاهده",selected:"انتخاب‌شده",clearSelection:"پاک کردن انتخاب",
  search:"جستجو در دانلودها …",name:"نام فایل",addedAt:"زمان افزودن",size:"سایز",status:"وضعیت",timeLeft:"زمان باقیمانده",speed:"سرعت",downloaded:"دانلود شده",info:"اطلاعات",
  addTitle:"افزودن دانلود",addHint:"هر آدرس در یک خط",ok:"تأیید",cancel:"انصراف",close:"بستن",language:"زبان",conns:"تعداد اتصال برای هر دانلود",folder:"پوشه ذخیره",browse:"انتخاب…",
  limit:"محدودیت سرعت (۰ = نامحدود)",resumable:"قابلیت ایست",yes:"دارد",no:"ندارد",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",details:"جزئیات دانلود",copyUrl:"کپی آدرس دانلود",copyFailed:"کپی آدرس دانلود انجام نشد.",
@@ -321,7 +327,7 @@ function render(){
   const activeConnections=d.segments.filter(s=>s.state===1).length;
   return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td title="${t("addedAt")}">${addedAt(d)}</td><td>${bytes(d.total)}</td>
   <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
-  <td><div class="pb ${c} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
+  <td><div class="pb ${c} ${p>=55?"is-over-half":""} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
  const selectVisible=$("selectVisible");selectVisible.checked=vis.length>0&&vis.every(d=>selectedIds.has(d.id));selectVisible.indeterminate=vis.some(d=>selectedIds.has(d.id))&&!selectVisible.checked;selectVisible.title=t("selectAll");selectVisible.setAttribute("aria-label",t("selectAll"));
  const cats=$("cats");
@@ -476,15 +482,23 @@ async function openBrowserGuide(browser){
  }catch(error){alert(t("browserGuideFailed")+"\n"+error)}
 }
 let updateDownloadUrl="";
-async function checkForUpdate(){
+async function checkForUpdate(manual=false){
+ const button=$("checkUpdateButton");
+ if(button.disabled)return;
+ button.disabled=true;
+ const label=button.querySelector("span");
+ const previousLabel=label.textContent;
+ if(manual)label.textContent=t("checkingUpdates");
  try{
   const update=await invoke("check_for_update");
-  if(!update)return;
+  if(!update){if(manual)alert(t("upToDate"));return}
   $("currentVersion").textContent=update.current_version;
   $("latestVersion").textContent=update.latest_version;
+  $("updateNotes").textContent=update.release_notes||t("upToDate");
   updateDownloadUrl=update.download_url;
   $("dUpdate").showModal();
- }catch(error){console.warn("Could not check for updates:",error)}
+ }catch(error){console.warn("Could not check for updates:",error);if(manual)alert(t("updateCheckFailed")+"\n"+error)}
+ finally{button.disabled=false;label.textContent=previousLabel}
 }
 async function openUpdatePage(){
  try{await invoke("open_release_page",{url:updateDownloadUrl});$("dUpdate").close()}

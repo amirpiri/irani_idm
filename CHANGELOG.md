@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0]
+
+### Added
+- Add a manual update check and show release notes in the update prompt.
+
+### Changed
+- Increase download percentage contrast on progress bars at 55% and above, adapting the text treatment to light and dark themes.
+
 ## [1.13.0]
 
 ### Added
