@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1]
+
+### Fixed
+- Avoid a dead-code warning for the Windows-only native-host URL validator on non-Windows builds.
+
 ## [1.15.0]
 
 ### Changed

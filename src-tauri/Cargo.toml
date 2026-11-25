@@ -1,6 +1,6 @@
 [package]
 name = "irani-idm"
-version = "1.15.0"
+version = "1.15.1"
 edition = "2021"
 default-run = "irani-idm"
 
