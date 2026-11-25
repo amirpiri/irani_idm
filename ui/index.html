@@ -259,6 +259,10 @@ const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
 let lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en"), completionAction=["none","shutdown","sleep"].includes(localStorage.completionAction)?localStorage.completionAction:"none";
 const SORT_KEYS=["name","addedAt","size","connections","status","timeLeft","speed"];
 let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, selectedIds=new Set(), cat="all", q="", appVersion=null;
+const connectionSettingsReady=invoke("get_download_connections").then(async saved=>{
+ if(saved===null){await invoke("set_download_connections",{connections:conns})}
+ else{conns=Math.min(32,Math.max(1,Number(saved)||8));localStorage.conns=conns}
+}).catch(error=>console.warn("Could not load the download connection setting:",error));
 let sortKey=SORT_KEYS.includes(localStorage.sortKey)?localStorage.sortKey:null;
 let sortDirection=localStorage.sortDirection==="descending"?"descending":"ascending";
 const readDisplaySetting=(key,min,max,fallback)=>{
@@ -326,7 +330,7 @@ function render(){
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
   const activeConnections=d.segments.filter(s=>s.state===1).length;
   return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td title="${t("addedAt")}">${addedAt(d)}</td><td>${bytes(d.total)}</td>
-  <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.segments.length,0)}</td>
+  <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.connections,0)}</td>
   <td><div class="pb ${c} ${p>=55?"is-over-half":""} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
   <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
  const selectVisible=$("selectVisible");selectVisible.checked=vis.length>0&&vis.every(d=>selectedIds.has(d.id));selectVisible.indeterminate=vis.some(d=>selectedIds.has(d.id))&&!selectVisible.checked;selectVisible.title=t("selectAll");selectVisible.setAttribute("aria-label",t("selectAll"));
@@ -398,6 +402,7 @@ async function runRowAction(action,id){
 }
 async function openAdd(){$("urls").value="";try{const c=(await navigator.clipboard.readText()).trim();if(/^https?:\/\//i.test(c))$("urls").value=c}catch{}$("dAdd").showModal()}
 async function doAdd(){
+ await connectionSettingsReady;
  const list=$("urls").value.split(/\s+/).filter(Boolean);$("dAdd").close();
  for(const url of list){
   let id;
@@ -457,6 +462,7 @@ async function applyProxySettings(){
  }
 }
 async function saveSet(){
+ await connectionSettingsReady;
  $("proxyError").textContent="";
  $("proxyError").style.color="var(--er)";
  const proxy={enabled:$("sProxyEnabled").checked,protocol:$("sProxyType").value,host:$("sProxyHost").value.trim(),port:Math.min(65535,Math.max(1,Number($("sProxyPort").value)||0)),username:$("sProxyUsername").value,password:$("sProxyPassword").value};
@@ -468,7 +474,10 @@ async function saveSet(){
  const nextDir=$("sDir").value.trim();
  try{await invoke("set_download_dir",{path:nextDir})}
  catch(error){$("proxyError").textContent=String(error);return}
- lang=$("sLang").value;themeMode=$("sTheme").value;conns=Math.min(32,Math.max(1,+$("sConn").value||8));dir=nextDir;completionAction=nextCompletionAction;
+ const nextConnections=Math.min(32,Math.max(1,+$("sConn").value||8));
+ try{await invoke("set_download_connections",{connections:nextConnections})}
+ catch(error){$("proxyError").textContent=String(error);return}
+ lang=$("sLang").value;themeMode=$("sTheme").value;conns=nextConnections;dir=nextDir;completionAction=nextCompletionAction;
  appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
  appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
  windowOpacity=Math.min(100,Math.max(30,Number($("sTransparency").value)||100));

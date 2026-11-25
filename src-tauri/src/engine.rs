@@ -25,13 +25,14 @@ const PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct Seg {
     start: u64,
-    end: u64, // inclusive; u64::MAX = unknown length
+    end: AtomicU64, // inclusive; u64::MAX = unknown length; can shrink when split
     done: AtomicU64,
     state: AtomicU8,
 }
 impl Seg {
     fn len(&self) -> u64 {
-        if self.end == u64::MAX { u64::MAX } else { self.end - self.start + 1 }
+        let end = self.end.load(Relaxed);
+        if end == u64::MAX { u64::MAX } else { end - self.start + 1 }
     }
 }
 
@@ -164,7 +165,7 @@ fn default_file_created() -> bool {
 }
 
 #[derive(Serialize, Clone)]
-pub struct SegView { done: u64, total: Option<u64>, state: u8 }
+pub struct SegView { start: u64, done: u64, total: Option<u64>, state: u8 }
 #[derive(Serialize, Clone)]
 pub struct View {
     pub id: u64,
@@ -183,6 +184,7 @@ pub struct View {
     error: Option<String>,
     resumable: bool,
     limit_kbps: u64,
+    connections: u32,
     segments: Vec<SegView>,
 }
 
@@ -276,7 +278,7 @@ impl Manager {
                     let full = x.end != u64::MAX && done >= x.end - x.start + 1;
                     Arc::new(Seg {
                         start: x.start,
-                        end: x.end,
+                        end: AtomicU64::new(x.end),
                         done: AtomicU64::new(done),
                         state: AtomicU8::new(if full { DONE } else { WAITING }),
                     })
@@ -399,7 +401,7 @@ impl Manager {
                 proxy_used: it.proxy_used,
                 error: if let Status::Error(e) = &it.status { Some(e.clone()) } else { None },
                 limit_kbps: it.limit.load(Relaxed),
-                segs: it.segs.iter().map(|s| SavedSeg { start: s.start, end: s.end, done: s.done.load(Relaxed) }).collect(),
+                segs: it.segs.iter().map(|s| SavedSeg { start: s.start, end: s.end.load(Relaxed), done: s.done.load(Relaxed) }).collect(),
             })
             .collect();
         if let Ok(j) = serde_json::to_vec(&list) {
@@ -429,6 +431,48 @@ impl Manager {
         let items = self.items.lock().unwrap();
         let proxy_enabled = self.proxy.lock().unwrap().enabled;
         items.get(&id).map(|it| Self::view_of(id, it, proxy_enabled))
+    }
+
+    /// When a worker becomes free, split the largest remaining active range.
+    /// The current worker takes the new upper half; the existing worker notices
+    /// its shortened end and finishes the lower half of its current response.
+    fn split_largest_active(&self, id: u64) -> Option<Arc<Seg>> {
+        const MIN_SPLIT_BYTES: u64 = 128 * 1024;
+        let mut items = self.items.lock().unwrap();
+        let item = items.get_mut(&id)?;
+        if item.cancel.load(Relaxed) || item.status != Status::Downloading {
+            return None;
+        }
+        if let Some(waiting) = item.segs.iter().find(|segment| {
+            segment.state.load(Relaxed) == WAITING
+                && (segment.end.load(Relaxed) == u64::MAX
+                    || segment.start.saturating_add(segment.done.load(Relaxed)) <= segment.end.load(Relaxed))
+        }) {
+            waiting.state.store(RECV, Relaxed);
+            return Some(waiting.clone());
+        }
+        let candidate = item.segs.iter()
+            .filter(|segment| segment.state.load(Relaxed) == RECV)
+            .filter_map(|segment| {
+                let end = segment.end.load(Relaxed);
+                if end == u64::MAX { return None; }
+                let next = segment.start.saturating_add(segment.done.load(Relaxed));
+                let remaining = end.saturating_sub(next).saturating_add(1);
+                (remaining >= MIN_SPLIT_BYTES * 2).then_some((segment.clone(), next, end, remaining))
+            })
+            .max_by_key(|(_, _, _, remaining)| *remaining);
+        let (left, next, old_end, remaining) = candidate?;
+        let left_len = remaining / 2;
+        let split_end = next + left_len - 1;
+        left.end.store(split_end, Relaxed);
+        let right = Arc::new(Seg {
+            start: split_end + 1,
+            end: AtomicU64::new(old_end),
+            done: AtomicU64::new(0),
+            state: AtomicU8::new(RECV),
+        });
+        item.segs.push(right.clone());
+        Some(right)
     }
 
     fn view_of(id: u64, it: &Item, proxy_enabled: bool) -> View {
@@ -461,12 +505,14 @@ impl Manager {
             error,
             resumable: it.resumable,
             limit_kbps: it.limit.load(Relaxed),
+            connections: it.connections,
             segments: it
                 .segs
                 .iter()
                 .map(|s| SegView {
+                    start: s.start,
                     done: s.done.load(Relaxed),
-                    total: if s.end == u64::MAX { None } else { Some(s.len()) },
+                    total: if s.end.load(Relaxed) == u64::MAX { None } else { Some(s.len()) },
                     state: s.state.load(Relaxed),
                 })
                 .collect(),
@@ -982,22 +1028,35 @@ impl Manager {
         };
         let client = self.client.lock().unwrap().clone();
         let pacer = Arc::new(RateLimiter::new());
-        let handles: Vec<_> = segs
-            .iter()
-            .filter(|s| s.state.load(Relaxed) != DONE)
-            .map(|s| {
-                tokio::spawn(run_seg(
-                    client.clone(),
-                    url.clone(),
-                    path.clone(),
-                    s.clone(),
-                    ranged,
-                    self.clone(),
-                    id,
-                    cancel.clone(),
-                    limit.clone(),
-                    pacer.clone(),
-                ))
+        let worker_count = segs.iter().filter(|segment| segment.state.load(Relaxed) != DONE).count().min(
+            self.items.lock().unwrap().get(&id).map(|item| item.connections as usize).unwrap_or(1)
+        ).max(1);
+        let handles: Vec<_> = segs.iter()
+            .filter(|segment| segment.state.load(Relaxed) != DONE)
+            .take(worker_count)
+            .map(|initial_segment| {
+                let mut segment = initial_segment.clone();
+                let client = client.clone();
+                let url = url.clone();
+                let path = path.clone();
+                let manager = self.clone();
+                let cancel = cancel.clone();
+                let limit = limit.clone();
+                let pacer = pacer.clone();
+                tokio::spawn(async move {
+                    loop {
+                        if cancel.load(Relaxed) {
+                            return Ok(());
+                        }
+                        run_seg(
+                            client.clone(), url.clone(), path.clone(), segment.clone(), ranged,
+                            manager.clone(), id, cancel.clone(), limit.clone(), pacer.clone(),
+                        ).await?;
+                        if cancel.load(Relaxed) { return Ok(()); }
+                        let Some(next_segment) = manager.split_largest_active(id) else { return Ok(()) };
+                        segment = next_segment;
+                    }
+                })
             })
             .collect();
         let mut err = None;
@@ -1056,7 +1115,10 @@ impl Manager {
 fn make_segments(total: Option<u64>, ranged: bool, connections: u32) -> Vec<Arc<Seg>> {
     match (total, ranged) {
         (Some(total), true) if total > 0 => {
-            let count = (connections.clamp(1, 32) as u64).min((total / (256 * 1024)).max(1));
+            // Start with one range per connection; workers split the largest live
+            // range in half whenever one of them becomes free.
+            let count = (connections.clamp(1, 32) as u64)
+                .min((total / (256 * 1024)).max(1));
             let size = total.div_ceil(count);
             (0..count)
                 .map(|index| {
@@ -1064,7 +1126,7 @@ fn make_segments(total: Option<u64>, ranged: bool, connections: u32) -> Vec<Arc<
                     let end = ((index + 1) * size - 1).min(total - 1);
                     Arc::new(Seg {
                         start,
-                        end,
+                        end: AtomicU64::new(end),
                         done: AtomicU64::new(0),
                         state: AtomicU8::new(WAITING),
                     })
@@ -1073,11 +1135,11 @@ fn make_segments(total: Option<u64>, ranged: bool, connections: u32) -> Vec<Arc<
         }
         _ => vec![Arc::new(Seg {
             start: 0,
-            end: if ranged {
+            end: AtomicU64::new(if ranged {
                 total.filter(|size| *size > 0).map(|size| size - 1).unwrap_or(u64::MAX)
             } else {
                 u64::MAX
-            },
+            }),
             done: AtomicU64::new(0),
             state: AtomicU8::new(WAITING),
         })],
@@ -1114,12 +1176,14 @@ mod segment_tests {
     }
 
     #[test]
-    fn ranged_download_uses_requested_connections_for_large_files() {
-        let total = 8 * 1024 * 1024;
-        let segments = make_segments(Some(total), true, 8);
+    fn ranged_download_starts_with_one_part_per_connection() {
+        let total = 16 * 1024 * 1024;
+        for connections in [1, 3, 13, 32] {
+            let segments = make_segments(Some(total), true, connections);
 
-        assert_eq!(segments.len(), 8);
-        assert_eq!(segments.iter().map(|segment| segment.len()).sum::<u64>(), total);
+            assert_eq!(segments.len(), connections as usize);
+            assert_eq!(segments.iter().map(|segment| segment.len()).sum::<u64>(), total);
+        }
     }
 
     #[test]
@@ -1289,7 +1353,8 @@ async fn attempt(
     cancel: &AtomicBool, limit: &AtomicU64, pacer: &RateLimiter,
 ) -> Result<(), String> {
     let mut from = seg.start + seg.done.load(Relaxed);
-    if seg.end != u64::MAX && from > seg.end {
+    let initial_end = seg.end.load(Relaxed);
+    if initial_end != u64::MAX && from > initial_end {
         seg.state.store(DONE, Relaxed);
         return Ok(());
     }
@@ -1303,7 +1368,7 @@ async fn attempt(
     seg.state.store(RECV, Relaxed);
     let mut req = client.get(url);
     if ranged {
-        let to = if seg.end == u64::MAX { String::new() } else { seg.end.to_string() };
+        let to = if initial_end == u64::MAX { String::new() } else { initial_end.to_string() };
         req = req.header("Range", format!("bytes={from}-{to}"));
     }
     let resp = tokio::select! {
@@ -1345,7 +1410,8 @@ async fn attempt(
             Ok(Some(Err(e))) => return Err(e.to_string()),
             Ok(Some(Ok(mut c))) => {
                 stall = 0;
-                if seg.end != u64::MAX {
+                let current_end = seg.end.load(Relaxed);
+                if current_end != u64::MAX {
                     let left = seg.len() - seg.done.load(Relaxed);
                     if c.len() as u64 > left {
                         c.truncate(left as usize);
@@ -1356,13 +1422,25 @@ async fn attempt(
                     seg.state.store(WAITING, Relaxed);
                     return Ok(());
                 }
+                if seg.end.load(Relaxed) != u64::MAX {
+                    let left = seg.len().saturating_sub(seg.done.load(Relaxed));
+                    if c.len() as u64 > left {
+                        c.truncate(left as usize);
+                    }
+                }
+                if c.is_empty() && seg.done.load(Relaxed) >= seg.len() {
+                    break;
+                }
                 f.write_all(&c).await.map_err(|e| e.to_string())?;
                 seg.done.fetch_add(c.len() as u64, Relaxed);
+                if seg.end.load(Relaxed) != u64::MAX && seg.done.load(Relaxed) >= seg.len() {
+                    break;
+                }
             }
         }
     }
     f.flush().await.map_err(|e| e.to_string())?;
-    if seg.end != u64::MAX && seg.done.load(Relaxed) < seg.len() {
+    if seg.end.load(Relaxed) != u64::MAX && seg.done.load(Relaxed) < seg.len() {
         return Err("connection closed early".into());
     }
     seg.state.store(DONE, Relaxed);
@@ -1433,6 +1511,39 @@ mod tests {
         );
         manager.next_id.store(id + 1, Relaxed);
         (manager, path, id)
+    }
+
+    #[test]
+    fn free_worker_splits_the_largest_active_range_in_half() {
+        let (manager, path, id) = manager_with_download();
+        let original = make_segments(Some(12 * 1024 * 1024), true, 3);
+        original[0].state.store(RECV, Relaxed);
+        original[0].done.store(3 * 1024 * 1024, Relaxed);
+        original[1].state.store(RECV, Relaxed);
+        original[2].state.store(DONE, Relaxed);
+        {
+            let mut items = manager.items.lock().unwrap();
+            let item = items.get_mut(&id).unwrap();
+            item.status = Status::Downloading;
+            item.connections = 3;
+            item.total = Some(12 * 1024 * 1024);
+            item.segs = original.clone();
+        }
+
+        let new_part = manager.split_largest_active(id).expect("remaining range should split");
+        let items = manager.items.lock().unwrap();
+        let item = items.get(&id).unwrap();
+        let active = item.segs.iter().filter(|segment| segment.state.load(Relaxed) == RECV).count();
+
+        assert_eq!(active, 3, "the configured three workers should own three active parts");
+        assert_eq!(original[0].len(), 4 * 1024 * 1024, "the smaller remaining range must stay intact");
+        assert_eq!(original[1].len(), 2 * 1024 * 1024);
+        assert_eq!(new_part.len(), 2 * 1024 * 1024);
+        assert_eq!(new_part.start, original[1].end.load(Relaxed) + 1);
+        assert_eq!(item.segs.len(), 4);
+        drop(items);
+        manager.items.lock().unwrap().get_mut(&id).unwrap().status = Status::Paused;
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 
     #[tokio::test]

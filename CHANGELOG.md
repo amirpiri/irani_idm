@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Rebalance active downloads dynamically: when a connection becomes free, split the largest remaining byte range in half and assign the new half to that connection.
+
+### Fixed
+- Apply the user's configured connections-per-download setting consistently to manual downloads, browser Native Messaging handoffs, and `iranidm://` links, and persist it for future sessions.
+
 ## [1.14.1]
 
 ### Fixed

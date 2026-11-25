@@ -4,7 +4,7 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 (no npm needed), with full RTL support for Persian.
 
 ## Features
-- Multi-segment downloads (default 8 connections, up to 32) with HTTP Range
+- Dynamically balanced multi-segment downloads (default 8 connections, up to 32) with HTTP Range; each free connection splits the largest remaining part in half and downloads the new half
 - Add downloads immediately while metadata is prepared in the background; probes get up to 15 seconds before falling back to a single-connection download
 - Pause / resume (also after restarting the app), auto-retry, stall timeout
 - System tray controls on Windows, Linux, and macOS; closing a window keeps the app running in the background

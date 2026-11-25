@@ -7,7 +7,10 @@ use std::{
     collections::HashMap,
     collections::HashSet,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering},
+        Arc, Mutex,
+    },
     time::{Duration, Instant},
 };
 use tauri::{
@@ -308,6 +311,44 @@ impl DownloadDirectory {
     }
 }
 
+#[derive(Clone)]
+struct ConnectionSettings {
+    value: Arc<AtomicU32>,
+    configured: Arc<AtomicBool>,
+    store: PathBuf,
+}
+
+impl ConnectionSettings {
+    fn load(data_dir: &Path) -> Self {
+        let store = data_dir.join("download-connections.txt");
+        let configured_value = std::fs::read_to_string(&store)
+            .ok()
+            .and_then(|value| value.trim().parse::<u32>().ok())
+            .filter(|value| (1..=32).contains(value));
+        Self {
+            value: Arc::new(AtomicU32::new(configured_value.unwrap_or(8))),
+            configured: Arc::new(AtomicBool::new(configured_value.is_some())),
+            store,
+        }
+    }
+
+    fn get(&self) -> u32 {
+        self.value.load(Ordering::Relaxed).clamp(1, 32)
+    }
+
+    fn is_configured(&self) -> bool {
+        self.configured.load(Ordering::Relaxed)
+    }
+
+    fn set(&self, connections: u32) -> Result<(), String> {
+        let connections = connections.clamp(1, 32);
+        std::fs::write(&self.store, connections.to_string()).map_err(|error| error.to_string())?;
+        self.value.store(connections, Ordering::Relaxed);
+        self.configured.store(true, Ordering::Relaxed);
+        Ok(())
+    }
+}
+
 fn load_download_directory(data_dir: &Path) -> PathBuf {
     let settings_file = data_dir.join("download-directory.txt");
     std::fs::read_to_string(settings_file)
@@ -503,6 +544,7 @@ fn start_native_messaging_server(
     app: tauri::AppHandle,
     manager: Manager,
     download_dir: DownloadDirectory,
+    connection_settings: ConnectionSettings,
 ) {
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -549,7 +591,7 @@ fn start_native_messaging_server(
                     .get()
                     .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
                 let id = manager
-                    .add(parsed.to_string(), directory, 8)
+                    .add(parsed.to_string(), directory, connection_settings.get())
                     .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
                 let _ = app.emit("downloads", manager.views(0.5));
                 if let Err(error) =
@@ -607,7 +649,7 @@ fn handle_download_link(app: &tauri::AppHandle, raw_url: &str) -> Result<(), Str
     let id = manager.add(
         target_url.to_string(),
         app.state::<DownloadDirectory>().get()?,
-        8,
+        app.state::<ConnectionSettings>().get(),
     )?;
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -632,6 +674,7 @@ fn migrate_download_history(old_data_dir: &Path, new_data_dir: &Path) -> std::io
 fn add_download(
     m: State<'_, Manager>,
     download_dir: State<'_, DownloadDirectory>,
+    connection_settings: State<'_, ConnectionSettings>,
     url: String,
     dir: Option<String>,
     connections: Option<u32>,
@@ -641,7 +684,20 @@ fn add_download(
         .map(PathBuf::from)
         .or_else(|| download_dir.get().ok())
         .ok_or("no download directory")?;
-    m.add(url, dir, connections.unwrap_or(8))
+    m.add(url, dir, connections.unwrap_or_else(|| connection_settings.get()))
+}
+
+#[tauri::command]
+fn get_download_connections(settings: State<'_, ConnectionSettings>) -> Option<u32> {
+    settings.is_configured().then(|| settings.get())
+}
+
+#[tauri::command]
+fn set_download_connections(
+    settings: State<'_, ConnectionSettings>,
+    connections: u32,
+) -> Result<(), String> {
+    settings.set(connections)
 }
 
 #[tauri::command]
@@ -890,8 +946,15 @@ pub fn run() {
             let download_dir =
                 DownloadDirectory(Arc::new(Mutex::new(load_download_directory(&dir))));
             app.manage(download_dir.clone());
+            let connection_settings = ConnectionSettings::load(&dir);
+            app.manage(connection_settings.clone());
             #[cfg(windows)]
-            start_native_messaging_server(app.handle().clone(), mgr.clone(), download_dir);
+            start_native_messaging_server(
+                app.handle().clone(),
+                mgr.clone(),
+                download_dir,
+                connection_settings,
+            );
             let completion_action = CompletionActionState(Arc::new(Mutex::new("none".into())));
             app.manage(completion_action.clone());
 
@@ -1047,6 +1110,8 @@ pub fn run() {
             set_completion_action,
             check_for_update,
             add_download,
+            get_download_connections,
+            set_download_connections,
             pause,
             resume,
             pause_all,
@@ -1081,7 +1146,33 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{browser_install_guide_url, release_version, CompletionTracker};
+    use super::{browser_install_guide_url, release_version, CompletionTracker, ConnectionSettings};
+
+    #[test]
+    fn connection_setting_persists_and_is_clamped_to_supported_range() {
+        let data_dir = std::env::temp_dir().join(format!(
+            "irani-idm-connection-settings-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&data_dir).unwrap();
+
+        let settings = ConnectionSettings::load(&data_dir);
+        assert!(!settings.is_configured());
+        assert_eq!(settings.get(), 8);
+        settings.set(19).unwrap();
+
+        let reloaded = ConnectionSettings::load(&data_dir);
+        assert!(reloaded.is_configured());
+        assert_eq!(reloaded.get(), 19);
+        reloaded.set(99).unwrap();
+        assert_eq!(reloaded.get(), 32);
+
+        std::fs::remove_dir_all(data_dir).unwrap();
+    }
 
     #[test]
     fn browser_install_guide_uses_the_selected_browser_and_language() {

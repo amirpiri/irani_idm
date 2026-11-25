@@ -141,8 +141,8 @@ function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-font-size",readSetting("appFontSize",12,18,14)+"px");
 }
 const words={
- en:{status:"Status",addedAt:"Added",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Connection parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",connection:"Connection",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
- fa:{status:"وضعیت",addedAt:"زمان افزودن",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های اتصال",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",connection:"اتصال",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
+ en:{status:"Status",addedAt:"Added",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Download parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",part:"Part",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
+ fa:{status:"وضعیت",addedAt:"زمان افزودن",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های دانلود",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",part:"بخش",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
 };
 const t=key=>words[lang][key]||key;
 Object.assign(words.en,{resumable:"Resume supported",yes:"Yes",no:"No"});
@@ -246,7 +246,7 @@ function render(download){
  $("downloaded").textContent=bytes(download.downloaded);
  $("speed").textContent=download.status==="downloading"?bytes(download.speed)+"/s":"—";
  $("eta").textContent=download.status==="downloading"?duration(download.eta):"—";
- $("connections").textContent=`${nf(download.segments.filter(segment=>segment.state===1).length,0)}/${nf(download.segments.length,0)}`;
+ $("connections").textContent=`${nf(download.segments.filter(segment=>segment.state===1).length,0)}/${nf(download.connections,0)}`;
  const resumableEl=$("resumable");
  resumableEl.textContent=t(download.resumable?"yes":"no");
 	resumableEl.style.color=download.resumable?"var(--ok)":"var(--er)";
@@ -258,17 +258,24 @@ function render(download){
  toggle.disabled=!canPause&&!canResume;
  $("openFile").disabled=download.status!=="completed";
  const states=["waiting","receiving","done"];
- $("pieces").innerHTML=download.segments.map((segment,index)=>{
+ // The parts panel represents work that is still assigned or waiting to be
+ // assigned. A completed range has released its connection, so remove it;
+ // the newly split range then appears in that freed connection's place.
+ const orderedSegments=download.segments
+  .filter(segment=>segment.state!==2)
+  .sort((a,b)=>a.start-b.start);
+ $("pieces").innerHTML=orderedSegments.map((segment,index)=>{
   const progress=segment.total?Math.min(100,segment.done/segment.total*100):(segment.state===2?100:0);
   const state=states[segment.state]||"waiting";
   const piece=$("pieces").ownerDocument.createElement("span");
-  piece.textContent=`${t("connection")} ${nf(index+1,0)}: ${nf(progress)}%`;
-  return `<span class="piece ${state==="done"?"done":""}" role="img" aria-label="${piece.textContent}" title="${piece.textContent}"><span style="width:${progress}%"></span></span>`;
+  piece.textContent=`${t("part")} ${nf(index+1,0)}: ${nf(progress)}%`;
+  const width=download.total&&segment.total?`flex:${segment.total} 1 0`:"flex:1";
+  return `<span class="piece ${state==="done"?"done":""}" style="${width}" role="img" aria-label="${piece.textContent}" title="${piece.textContent}"><span style="width:${progress}%"></span></span>`;
  }).join("");
- $("segmentList").innerHTML=download.segments.map((segment,index)=>{
+ $("segmentList").innerHTML=orderedSegments.map((segment,index)=>{
   const progress=segment.total?Math.min(100,segment.done/segment.total*100):(segment.state===2?100:0);
   const state=states[segment.state]||"waiting";
-  return `<div class="segment-row"><span>${t("connection")} ${nf(index+1,0)}</span><div class="progress ${progress>=55?"is-over-half":""}"><span style="width:${progress}%"></span><strong>${nf(progress)}%</strong></div><span class="segment-info">${bytes(segment.done)} / ${bytes(segment.total)} · ${t(state)}</span></div>`;
+  return `<div class="segment-row"><span>${t("part")} ${nf(index+1,0)}</span><div class="progress ${progress>=55?"is-over-half":""}"><span style="width:${progress}%"></span><strong>${nf(progress)}%</strong></div><span class="segment-info">${bytes(segment.done)} / ${bytes(segment.total)} · ${t(state)}</span></div>`;
  }).join("");
 }
 async function action(command,args={}){
