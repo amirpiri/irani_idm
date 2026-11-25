@@ -8,6 +8,7 @@ struct Request {
     url: String,
 }
 
+#[cfg(any(windows, test))]
 fn validate_download_url(raw_url: &str) -> Result<url::Url, String> {
     let parsed = url::Url::parse(raw_url.trim()).map_err(|error| error.to_string())?;
     if !["http", "https"].contains(&parsed.scheme()) || parsed.host_str().is_none() {
