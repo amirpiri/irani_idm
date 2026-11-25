@@ -126,7 +126,10 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
 const {invoke}=window.__TAURI__.core,{listen}=window.__TAURI__.event;
 const currentWindow=window.__TAURI__.window.getCurrentWindow();
 const id=Number(currentWindow.label.slice("download-".length));
-const lang=localStorage.lang||(navigator.language.startsWith("fa")?"fa":"en");
+const supportedLanguages=["en","fa","zh","ru","ar","ur","nl","es"];
+const navigatorLanguage=navigator.language.toLowerCase();
+const detectedLanguage=supportedLanguages.find(code=>navigatorLanguage.startsWith(code))||"en";
+const lang=supportedLanguages.includes(localStorage.lang)?localStorage.lang:detectedLanguage;
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
 const colorThemes=["ocean","violet","emerald","sunset","rose","cyan","amber","indigo","mint","coral","graphite"];
 let colorTheme=colorThemes.includes(localStorage.colorTheme)?localStorage.colorTheme:"ocean";
@@ -144,9 +147,31 @@ const words={
  en:{status:"Status",addedAt:"Added",size:"Size",downloaded:"Downloaded",speed:"Speed",timeLeft:"Time left",connections:"Connections",serverCountry:"Server country",parts:"Download parts",limit:"Speed limit (0 = unlimited)",apply:"Apply",resume:"Resume",pause:"Pause",openFile:"Open file",openFolder:"Open folder",close:"Close",preparing:"Preparing…",downloading:"Downloading",paused:"Paused",completed:"Completed",error:"Error",waiting:"Waiting",receiving:"Receiving",done:"Done",part:"Part",proxyUsed:"Downloading via proxy",h:"h",m:"m",s:"s"},
  fa:{status:"وضعیت",addedAt:"زمان افزودن",size:"اندازه",downloaded:"دانلود شده",speed:"سرعت",timeLeft:"زمان باقیمانده",connections:"اتصال‌ها",serverCountry:"کشور سرور",parts:"بخش‌های دانلود",limit:"محدودیت سرعت (۰ = نامحدود)",apply:"اعمال",resume:"ادامه",pause:"توقف",openFile:"باز کردن فایل",openFolder:"باز کردن پوشه",close:"بستن",preparing:"در حال آماده‌سازی…",downloading:"در حال دانلود",paused:"متوقف",completed:"کامل",error:"خطا",waiting:"در انتظار",receiving:"در حال دریافت",done:"انجام شد",part:"بخش",proxyUsed:"دانلود از طریق پراکسی",h:"ساعت",m:"دقیقه",s:"ثانیه"}
 };
+Object.assign(words,{
+ zh:{...words.en,status:"状态",addedAt:"添加时间",size:"大小",downloaded:"已下载",speed:"速度",timeLeft:"剩余时间",connections:"连接数",serverCountry:"服务器国家",parts:"下载分块",limit:"速度限制（0 = 无限）",apply:"应用",resume:"继续",pause:"暂停",openFile:"打开文件",openFolder:"打开文件夹",close:"关闭",preparing:"正在准备…",downloading:"正在下载",paused:"已暂停",completed:"已完成",error:"错误",waiting:"等待中",receiving:"正在接收",done:"完成",part:"分块",proxyUsed:"通过代理下载",h:"小时",m:"分钟",s:"秒"},
+ ru:{...words.en,status:"Состояние",addedAt:"Добавлено",size:"Размер",downloaded:"Загружено",speed:"Скорость",timeLeft:"Осталось",connections:"Соединения",serverCountry:"Страна сервера",parts:"Части загрузки",limit:"Ограничение скорости (0 = без лимита)",apply:"Применить",resume:"Продолжить",pause:"Пауза",openFile:"Открыть файл",openFolder:"Открыть папку",close:"Закрыть",preparing:"Подготовка…",downloading:"Загружается",paused:"Приостановлено",completed:"Завершено",error:"Ошибка",waiting:"Ожидание",receiving:"Получение",done:"Готово",part:"Часть",proxyUsed:"Загрузка через прокси",h:"ч",m:"м",s:"с"},
+ ar:{...words.en,status:"الحالة",addedAt:"أُضيف في",size:"الحجم",downloaded:"تم التنزيل",speed:"السرعة",timeLeft:"الوقت المتبقي",connections:"الاتصالات",serverCountry:"بلد الخادم",parts:"أجزاء التنزيل",limit:"حد السرعة (0 = بلا حدود)",apply:"تطبيق",resume:"استئناف",pause:"إيقاف مؤقت",openFile:"فتح الملف",openFolder:"فتح المجلد",close:"إغلاق",preparing:"جارٍ التحضير…",downloading:"جارٍ التنزيل",paused:"متوقف مؤقتًا",completed:"مكتمل",error:"خطأ",waiting:"قيد الانتظار",receiving:"جارٍ الاستلام",done:"تم",part:"جزء",proxyUsed:"تنزيل عبر وكيل",h:"س",m:"د",s:"ث"},
+ ur:{...words.en,status:"حالت",addedAt:"شامل کیا گیا",size:"سائز",downloaded:"ڈاؤن لوڈ شدہ",speed:"رفتار",timeLeft:"باقی وقت",connections:"کنکشنز",serverCountry:"سرور کا ملک",parts:"ڈاؤن لوڈ حصے",limit:"رفتار کی حد (0 = بلا حد)",apply:"لاگو کریں",resume:"جاری رکھیں",pause:"روکیں",openFile:"فائل کھولیں",openFolder:"فولڈر کھولیں",close:"بند کریں",preparing:"تیاری ہو رہی ہے…",downloading:"ڈاؤن لوڈ ہو رہا ہے",paused:"روکا گیا",completed:"مکمل",error:"خرابی",waiting:"انتظار",receiving:"موصول ہو رہا ہے",done:"مکمل",part:"حصہ",proxyUsed:"پراکسی کے ذریعے ڈاؤن لوڈ",h:"گھنٹے",m:"منٹ",s:"سیکنڈ"},
+ nl:{...words.en,status:"Status",addedAt:"Toegevoegd",size:"Grootte",downloaded:"Gedownload",speed:"Snelheid",timeLeft:"Resterende tijd",connections:"Verbindingen",serverCountry:"Serverland",parts:"Downloadonderdelen",limit:"Snelheidslimiet (0 = onbeperkt)",apply:"Toepassen",resume:"Hervatten",pause:"Pauzeren",openFile:"Bestand openen",openFolder:"Map openen",close:"Sluiten",preparing:"Voorbereiden…",downloading:"Downloaden",paused:"Gepauzeerd",completed:"Voltooid",error:"Fout",waiting:"Wachten",receiving:"Ontvangen",done:"Klaar",part:"Onderdeel",proxyUsed:"Downloaden via proxy",h:"u",m:"m",s:"s"},
+ es:{...words.en,status:"Estado",addedAt:"Añadido",size:"Tamaño",downloaded:"Descargado",speed:"Velocidad",timeLeft:"Tiempo restante",connections:"Conexiones",serverCountry:"País del servidor",parts:"Partes de descarga",limit:"Límite de velocidad (0 = ilimitado)",apply:"Aplicar",resume:"Reanudar",pause:"Pausar",openFile:"Abrir archivo",openFolder:"Abrir carpeta",close:"Cerrar",preparing:"Preparando…",downloading:"Descargando",paused:"En pausa",completed:"Completada",error:"Error",waiting:"Esperando",receiving:"Recibiendo",done:"Hecho",part:"Parte",proxyUsed:"Descargando mediante proxy",h:"h",m:"min",s:"s"}
+});
 const t=key=>words[lang][key]||key;
 Object.assign(words.en,{resumable:"Resume supported",yes:"Yes",no:"No"});
 Object.assign(words.fa,{resumable:"امکان ادامه دانلود",yes:"بله",no:"خیر"});
+Object.assign(words.zh,{resumable:"支持续传",yes:"是",no:"否"});
+Object.assign(words.ru,{resumable:"Поддерживает возобновление",yes:"Да",no:"Нет"});
+Object.assign(words.ar,{resumable:"دعم الاستئناف",yes:"نعم",no:"لا"});
+Object.assign(words.ur,{resumable:"جاری رکھنے کی سہولت",yes:"ہاں",no:"نہیں"});
+Object.assign(words.nl,{resumable:"Hervatting ondersteund",yes:"Ja",no:"Nee"});
+Object.assign(words.es,{resumable:"Reanudación compatible",yes:"Sí",no:"No"});
+Object.assign(words.en,{unavailable:"Unavailable",detecting:"Detecting…"});
+Object.assign(words.fa,{unavailable:"نامشخص",detecting:"در حال تشخیص…"});
+Object.assign(words.zh,{unavailable:"不可用",detecting:"正在检测…"});
+Object.assign(words.ru,{unavailable:"Недоступно",detecting:"Определение…"});
+Object.assign(words.ar,{unavailable:"غير متاح",detecting:"جارٍ الكشف…"});
+Object.assign(words.ur,{unavailable:"دستیاب نہیں",detecting:"شناخت ہو رہی ہے…"});
+Object.assign(words.nl,{unavailable:"Niet beschikbaar",detecting:"Detecteren…"});
+Object.assign(words.es,{unavailable:"No disponible",detecting:"Detectando…"});
 const $=name=>document.getElementById(name);
 const partsSection=document.querySelector("details.section-title");
 const partsStateKey=`download-${id}-parts-open`;
@@ -163,8 +188,9 @@ window.addEventListener("storage",event=>{
  if(event.key==="colorTheme"){colorTheme=colorThemes.includes(event.newValue)?event.newValue:"ocean";applyTheme()}
  if(event.key==="appScale"||event.key==="appFontSize")applyDisplaySettings();
 });
-const nf=(value,digits=1)=>new Intl.NumberFormat(lang==="fa"?"fa-IR":"en-US",{maximumFractionDigits:digits}).format(value);
-const addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":"en-US-u-ca-gregory",{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+const localeForLang=()=>({fa:"fa-IR",zh:"zh-CN",ru:"ru-RU",ar:"ar-SA",ur:"ur-PK",nl:"nl-NL",es:"es-ES"}[lang]||"en-US");
+const nf=(value,digits=1)=>new Intl.NumberFormat(localeForLang(),{maximumFractionDigits:digits}).format(value);
+const addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":localeForLang(),{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
 function bytes(value){
  if(value==null)return"—";
  const units=["B","KB","MB","GB","TB"];let unit=0;
@@ -232,7 +258,7 @@ function render(download){
   flagEl.src=flagUrl;
  }
  $("serverCountryName").textContent=hasServerCountry?download.server_country:
-  (["completed","error"].includes(download.status)?(lang==="fa"?"نامشخص":"Unavailable"):(lang==="fa"?"در حال تشخیص…":"Detecting…"));
+  (["completed","error"].includes(download.status)?t("unavailable"):t("detecting"));
  updateProxyBadge(download);
  const percent=download.total?Math.min(100,download.downloaded/download.total*100):(download.status==="completed"?100:0);
  updateProgressActivity(download);
@@ -283,7 +309,8 @@ async function action(command,args={}){
  catch(error){showError(String(error))}
 }
 document.documentElement.lang=lang;
-document.documentElement.dir=lang==="fa"?"rtl":"ltr";
+document.documentElement.lang=lang;
+document.documentElement.dir=["fa","ar","ur"].includes(lang)?"rtl":"ltr";
 document.querySelectorAll("[data-i]").forEach(element=>element.textContent=t(element.dataset.i));
 applyTheme();
 applyDisplaySettings();

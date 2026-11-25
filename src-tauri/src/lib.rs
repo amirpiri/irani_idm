@@ -119,11 +119,12 @@ fn browser_install_guide_url(browser: &str, language: &str) -> Result<String, St
     if !["chrome", "edge", "firefox"].contains(&browser) {
         return Err("Unsupported browser".into());
     }
-    if !["en", "fa"].contains(&language) {
+    if !["en", "fa", "zh", "ru", "ar", "ur", "nl", "es"].contains(&language) {
         return Err("Unsupported guide language".into());
     }
+    let guide_language = if language == "fa" { "fa" } else { "en" };
     Ok(format!(
-        "{PROJECT_URL}/blob/main/docs/extensions/{browser}/README.{language}.md"
+        "{PROJECT_URL}/blob/main/docs/extensions/{browser}/README.{guide_language}.md"
     ))
 }
 
@@ -1183,6 +1184,10 @@ mod tests {
         assert_eq!(
             browser_install_guide_url("firefox", "en").unwrap(),
             "https://github.com/amirpiri/irani_idm/blob/main/docs/extensions/firefox/README.en.md"
+        );
+        assert_eq!(
+            browser_install_guide_url("edge", "zh").unwrap(),
+            "https://github.com/amirpiri/irani_idm/blob/main/docs/extensions/edge/README.en.md"
         );
         assert!(browser_install_guide_url("unknown", "en").is_err());
         assert!(browser_install_guide_url("edge", "de").is_err());

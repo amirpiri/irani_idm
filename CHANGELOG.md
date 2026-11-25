@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0]
+
+### Added
+- Add Chinese, Russian, Arabic, Urdu, Dutch, and Spanish translations for the desktop interface.
+- Add locale-aware number and date formatting for supported languages.
+- Add RTL layout support for Arabic and Urdu.
+
+### Changed
+- Allow browser-install guide routing to accept all supported app locales, with English fallback where localized guides are not yet available.
+
 ## [1.15.1]
 
 ### Fixed
