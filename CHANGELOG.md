@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0]
+
 ### Changed
 - Rebalance active downloads dynamically: when a connection becomes free, split the largest remaining byte range in half and assign the new half to that connection.
 
