@@ -30,6 +30,8 @@
 :root[data-theme="dark"][data-palette="coral"]{--bg:#2d201f;--card:#3c2b29;--tx:#fff0ed;--mut:#c5a09a;--bd:#60413d;--ac:#ff9385;--sel:#603a37}
 :root[data-palette="graphite"]{--bg:#eff1f3;--card:#fff;--tx:#252b33;--mut:#707b87;--bd:#d9dee4;--ac:#566474;--sel:#dce2e9}
 :root[data-theme="dark"][data-palette="graphite"]{--bg:#1d2229;--card:#292f38;--tx:#edf1f5;--mut:#a2acb8;--bd:#414b58;--ac:#a8bacd;--sel:#394655}
+:root[data-palette="pastel"]{--bg:#f6f1fb;--card:#fffaff;--tx:#372f45;--mut:#756b83;--bd:#e7dff0;--ac:#9667c7;--sel:#e8ddf5;--ok:#6daa8a;--er:#d97791}
+:root[data-theme="dark"][data-palette="pastel"]{--bg:#211c2b;--card:#2d2639;--tx:#f7efff;--mut:#b4a5c4;--bd:#493b57;--ac:#c49aef;--sel:#44324f;--ok:#7cc9a4;--er:#f08eab}
 :root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -55,8 +57,8 @@ th{position:sticky;top:0;background:var(--card-glass);text-align:start;padding:8
 th[data-sort]{cursor:pointer;user-select:none}th[data-sort]:hover{color:var(--ac)}th[data-sort]::after{content:"↕";display:inline-block;margin-inline-start:7px;color:var(--mut);font-family:Arial,sans-serif;font-size:1.05em;font-weight:900;line-height:1;-webkit-text-stroke:1px currentColor;vertical-align:-.04em}th[data-sort][aria-sort="ascending"]::after{content:"↑";color:var(--ac);font-size:1.15em;-webkit-text-stroke:1.2px currentColor}th[data-sort][aria-sort="descending"]::after{content:"↓";color:var(--ac);font-size:1.15em;-webkit-text-stroke:1.2px currentColor}
 td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td:nth-child(5),td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
-tr.r{cursor:default}tr.r.sel{background:var(--sel-glass)}
-th.pick,td.pick{width:38px;text-align:center;padding-inline:5px}td.pick input,th.pick input{width:16px;height:16px;accent-color:var(--ac);cursor:pointer}
+tr.r{cursor:pointer}tr.r.sel{background:var(--sel-glass)}
+th.pick,td.pick{width:38px;text-align:center;padding-inline:5px}td.pick input,th.pick input{width:20px;height:20px;accent-color:var(--ac);cursor:pointer}
 td.n{max-width:360px;overflow:hidden;text-overflow:ellipsis}
 .pb{height:16px;background:var(--bg-glass);border-radius:8px;overflow:hidden;min-width:90px;position:relative}
 .pb>div{height:100%;position:relative;background:var(--ac);transition:width .3s}.pb.ok>div{background:var(--ok)}.pb.er>div{background:var(--er)}
@@ -123,6 +125,83 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 #rowMenu button:hover:not(:disabled){background:var(--bg-glass)}
 #rowMenu button:disabled{opacity:.5;cursor:default}
 .menu-sep{height:1px;margin:4px 5px;background:var(--bd)}
+body{background:radial-gradient(ellipse at 8% -18%,color-mix(in srgb,var(--ac) 20%,transparent),transparent 42%),radial-gradient(ellipse at 96% 8%,color-mix(in srgb,var(--ac) 11%,transparent),transparent 34%),linear-gradient(145deg,var(--bg-glass),color-mix(in srgb,var(--bg) 88%,var(--ac)));background-attachment:fixed}
+#bar,#side{background:linear-gradient(135deg,color-mix(in srgb,var(--card-glass) 76%,transparent),color-mix(in srgb,var(--card-glass) 56%,transparent));backdrop-filter:blur(30px) saturate(1.65);-webkit-backdrop-filter:blur(30px) saturate(1.65)}
+#bar{border-bottom-color:color-mix(in srgb,var(--ac) 20%,var(--bd));box-shadow:0 5px 24px color-mix(in srgb,var(--ac) 7%,transparent)}
+#side{border-inline-start-color:color-mix(in srgb,var(--ac) 18%,var(--bd))}
+.tb{transition:background .18s ease,box-shadow .18s ease,color .18s ease,transform .18s ease}
+.tb:hover:not(:disabled){background:color-mix(in srgb,var(--sel-glass) 72%,transparent);box-shadow:0 0 18px color-mix(in srgb,var(--ac) 16%,transparent);transform:translateY(-1px)}
+.cat{transition:background .18s ease,box-shadow .18s ease,color .18s ease}
+.cat.on{box-shadow:inset 3px 0 color-mix(in srgb,var(--ac) 78%,transparent),0 0 18px color-mix(in srgb,var(--ac) 12%,transparent)}
+.stat,#q,#tw{background:linear-gradient(145deg,color-mix(in srgb,var(--card-glass) 82%,transparent),color-mix(in srgb,var(--card-glass) 62%,var(--ac)));backdrop-filter:blur(26px) saturate(1.5);-webkit-backdrop-filter:blur(26px) saturate(1.5);box-shadow:0 10px 28px color-mix(in srgb,#000 5%,transparent),inset 0 1px color-mix(in srgb,#fff 64%,transparent)}
+.stat{border:1px solid color-mix(in srgb,var(--ac) 16%,var(--bd));transition:border-color .2s ease,box-shadow .2s ease}
+.stat:hover{border-color:color-mix(in srgb,var(--ac) 38%,var(--bd));box-shadow:0 8px 26px color-mix(in srgb,var(--ac) 10%,transparent),inset 0 1px color-mix(in srgb,#fff 50%,transparent)}
+#q{border-color:color-mix(in srgb,var(--ac) 23%,var(--bd));transition:border-color .2s ease,box-shadow .2s ease}
+#q:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 16%,transparent),0 0 22px color-mix(in srgb,var(--ac) 15%,transparent)}
+#tw{border-color:color-mix(in srgb,var(--ac) 18%,var(--bd));box-shadow:0 14px 36px color-mix(in srgb,#000 8%,transparent),inset 0 1px color-mix(in srgb,#fff 45%,transparent)}
+th{background:linear-gradient(180deg,color-mix(in srgb,var(--card-glass) 82%,var(--ac)),color-mix(in srgb,var(--card-glass) 68%,transparent));backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4)}
+tr.r{background-color:transparent;transition:background-color .34s cubic-bezier(.22,.8,.24,1),box-shadow .34s cubic-bezier(.22,.8,.24,1)}
+tr.r:hover{background-color:color-mix(in srgb,var(--ac) 20%,var(--card-glass));background-image:linear-gradient(110deg,transparent 10%,color-mix(in srgb,#fff 62%,transparent) 44%,color-mix(in srgb,var(--ac) 18%,transparent) 56%,transparent 76%);background-size:240% 100%;background-position:0 0;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 48%,transparent),inset 0 1px color-mix(in srgb,#fff 42%,transparent),inset 0 -1px color-mix(in srgb,var(--ac) 22%,transparent),0 5px 18px color-mix(in srgb,var(--ac) 14%,transparent);animation:row-sheen 1s ease-out}
+:root[dir="rtl"] tr.r:hover{background-position:100% 0;animation-direction:reverse}
+tr.r td{transition:background-color .3s cubic-bezier(.22,.8,.24,1),box-shadow .3s cubic-bezier(.22,.8,.24,1)}
+tr.r:hover td{background-color:color-mix(in srgb,var(--ac) 14%,transparent);box-shadow:inset 0 1px color-mix(in srgb,#fff 36%,transparent),inset 0 -1px color-mix(in srgb,var(--ac) 18%,transparent)}
+tr.r.sel{background-color:color-mix(in srgb,var(--sel-glass) 85%,transparent);box-shadow:inset 3px 0 color-mix(in srgb,var(--ac) 80%,transparent)}
+tr.r.sel:hover{background-color:color-mix(in srgb,var(--ac) 26%,var(--card-glass));box-shadow:inset 3px 0 color-mix(in srgb,var(--ac) 90%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--ac) 64%,transparent),inset 0 1px color-mix(in srgb,#fff 42%,transparent),inset 0 -1px color-mix(in srgb,var(--ac) 22%,transparent),0 5px 18px color-mix(in srgb,var(--ac) 14%,transparent)}
+@keyframes row-sheen{from{background-position:100% 0}to{background-position:0 0}}
+.pb{box-shadow:inset 0 1px 5px color-mix(in srgb,#000 10%,transparent),0 0 0 1px color-mix(in srgb,var(--ac) 8%,transparent)}
+.pb>div{box-shadow:0 0 12px color-mix(in srgb,var(--ac) 44%,transparent)}
+.pb.ok>div{box-shadow:0 0 12px color-mix(in srgb,var(--ok) 48%,transparent)}
+.pb.er>div{box-shadow:0 0 12px color-mix(in srgb,var(--er) 45%,transparent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid color-mix(in srgb,var(--ac) 75%,transparent);outline-offset:2px}
+input:not([type="checkbox"]),select,textarea{transition:border-color .18s ease,box-shadow .18s ease}
+input:not([type="checkbox"]):focus,select:focus,textarea:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 14%,transparent)}
+dialog{background:linear-gradient(145deg,color-mix(in srgb,var(--card-glass) 84%,transparent),color-mix(in srgb,var(--card-glass) 66%,var(--ac)));backdrop-filter:blur(34px) saturate(1.6);-webkit-backdrop-filter:blur(34px) saturate(1.6);border-color:color-mix(in srgb,var(--ac) 32%,var(--bd));box-shadow:0 24px 80px color-mix(in srgb,#000 24%,transparent),0 0 42px color-mix(in srgb,var(--ac) 16%,transparent),inset 0 1px color-mix(in srgb,#fff 68%,transparent)}
+.btn,.browser-install,.palette-option{background:linear-gradient(145deg,color-mix(in srgb,var(--card-glass) 76%,transparent),color-mix(in srgb,var(--card-glass) 56%,var(--ac)));backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-color:color-mix(in srgb,var(--ac) 17%,var(--bd))}
+.btn,.browser-install,.palette-option{box-shadow:0 4px 14px color-mix(in srgb,#000 5%,transparent),inset 0 1px color-mix(in srgb,#fff 38%,transparent);transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
+.btn:hover:not(:disabled),.browser-install:hover,.palette-option:hover{transform:translateY(-1px);box-shadow:0 7px 20px color-mix(in srgb,var(--ac) 13%,transparent),inset 0 1px color-mix(in srgb,#fff 45%,transparent)}
+.btn.p{box-shadow:0 5px 18px color-mix(in srgb,var(--ac) 32%,transparent),inset 0 1px color-mix(in srgb,#fff 35%,transparent)}
+#rowMenu{backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-color:color-mix(in srgb,var(--ac) 26%,var(--bd));box-shadow:0 12px 32px color-mix(in srgb,#000 16%,transparent),0 0 22px color-mix(in srgb,var(--ac) 10%,transparent)}
+#appVersion{text-shadow:0 0 14px color-mix(in srgb,var(--ac) 22%,transparent)}
+@media(prefers-reduced-motion:reduce){.tb,.cat,.stat,#q,tr.r,.btn,.browser-install,.palette-option{transition:none}.tb:hover:not(:disabled),.btn:hover:not(:disabled),.browser-install:hover,.palette-option:hover{transform:none}tr.r:hover{animation:none;background-image:none}}
+body{position:relative;isolation:isolate}
+body::before{content:"";position:fixed;z-index:-1;inset:-35%;pointer-events:none;background:radial-gradient(ellipse at 34% 38%,color-mix(in srgb,var(--ac) 10%,transparent),transparent 30%),radial-gradient(ellipse at 70% 66%,color-mix(in srgb,var(--ac) 8%,transparent),transparent 28%);filter:blur(34px);animation:ambient-drift 22s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;z-index:2;inset:0;pointer-events:none;opacity:.34;background-image:radial-gradient(ellipse 1px 8px at 8% 18%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 8px 1px at 8% 18%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 8% 18%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.4px,transparent 3px),radial-gradient(ellipse 1px 7px at 51% 12%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 7px 1px at 51% 12%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 51% 12%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.3px,transparent 3px),radial-gradient(ellipse 1px 8px at 94% 78%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 8px 1px at 94% 78%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 94% 78%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.4px,transparent 3px),radial-gradient(circle at 27% 68%,color-mix(in srgb,#fff 68%,var(--ac)) 0 1px,transparent 2.5px),radial-gradient(circle at 73% 37%,color-mix(in srgb,#fff 72%,var(--ac)) 0 1.1px,transparent 2.7px),radial-gradient(circle at 39% 91%,color-mix(in srgb,#fff 72%,var(--ac)) 0 1px,transparent 2.5px);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--ac) 62%,transparent));animation:glitter-twinkle 6s ease-in-out infinite alternate}
+@keyframes ambient-drift{0%{transform:translate3d(-2%,1%,0) scale(.96)}100%{transform:translate3d(3%,-2%,0) scale(1.06)}}
+@keyframes glitter-twinkle{0%,100%{opacity:.26}50%{opacity:.52}}
+@keyframes rise-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+#bar{animation:rise-in .45s cubic-bezier(.2,.75,.25,1) both}
+#side{animation:rise-in .55s .06s cubic-bezier(.2,.75,.25,1) both}
+#top{animation:rise-in .5s .1s cubic-bezier(.2,.75,.25,1) both}
+#tw{animation:rise-in .6s .14s cubic-bezier(.2,.75,.25,1) both}
+#top .stat:nth-child(1){animation:rise-in .45s .14s both}
+#top .stat:nth-child(2){animation:rise-in .45s .2s both}
+#top .stat:nth-child(3){animation:rise-in .45s .26s both}
+.tb svg{transition:transform .22s cubic-bezier(.2,.8,.2,1),filter .22s ease}
+.tb:hover:not(:disabled) svg{transform:translateY(-2px) scale(1.1);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--ac) 50%,transparent))}
+.tb:active:not(:disabled),.btn:active:not(:disabled),.browser-install:active:not(:disabled){transform:scale(.96)}
+#checkUpdateButton:hover:not(:disabled) svg{animation:refresh-turn .7s ease}
+@keyframes refresh-turn{to{transform:rotate(180deg)}}
+.cat{position:relative;overflow:hidden}
+.cat::before{content:"";position:absolute;inset-block:20%;inset-inline-start:0;width:3px;border-radius:4px;background:var(--ac);transform:scaleY(0);transition:transform .2s ease}
+.cat.on::before{transform:scaleY(1)}
+th[data-sort]::after{transition:transform .2s ease,color .2s ease}
+th[data-sort]:hover::after{transform:translateY(-2px)}
+.settings-tab{transition:color .18s ease,background .18s ease,box-shadow .18s ease}
+.settings-tab[aria-selected="true"]{box-shadow:0 4px 18px color-mix(in srgb,var(--ac) 14%,transparent)}
+.fld input.switch:checked{box-shadow:0 0 14px color-mix(in srgb,var(--ac) 36%,transparent)}
+.fld input.switch:checked::before{box-shadow:0 0 9px color-mix(in srgb,var(--ac) 35%,transparent)}
+dialog[open]{animation:dialog-arrive .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dialog-arrive{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+dialog::backdrop{animation:backdrop-arrive .2s ease both}
+@keyframes backdrop-arrive{from{background:#0000}to{background:#0006}}
+.empty-row td{height:100%;padding:0;border:0;white-space:normal}
+.empty-state{min-height:clamp(280px,48vh,480px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;text-align:center}
+.empty-icon{width:72px;height:72px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--ac) 30%,var(--bd));border-radius:24px;background:linear-gradient(145deg,color-mix(in srgb,var(--ac) 16%,var(--card)),color-mix(in srgb,var(--card) 88%,transparent));color:var(--ac);box-shadow:0 0 0 8px color-mix(in srgb,var(--ac) 5%,transparent),0 12px 32px color-mix(in srgb,var(--ac) 16%,transparent),inset 0 1px #fff8}
+.empty-icon svg{width:34px;height:34px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--ac) 36%,transparent))}
+.empty-state strong{font-size:1.2em}
+.empty-state>span{max-width:380px;color:var(--mut);line-height:1.6}
+.empty-state .btn{margin-top:5px;padding:9px 18px}
+@media(prefers-reduced-motion:reduce){body::before,body::after,.tb svg,#bar,#side,#top,#tw,#top .stat,dialog[open],dialog::backdrop{animation:none!important}.cat::before,.settings-tab,td,th[data-sort]::after{transition:none}}
 </style>
 </head>
 <body>
@@ -169,7 +248,13 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
   <section class="settings-panel" id="settingsGeneral" role="tabpanel" aria-labelledby="settingsTabGeneral">
     <div class="fld"><label data-i="language"></label><select id="sLang"><option value="en">English</option><option value="fa">فارسی</option><option value="zh">中文</option><option value="ru">Русский</option><option value="ar">العربية</option><option value="ur">اردو</option><option value="nl">Nederlands</option><option value="es">Español</option></select></div>
     <div class="fld"><label data-i="conns"></label><input id="sConn" type="number" min="1" max="32" style="width:80px"></div>
+    <div class="fld"><label for="sParallel" data-i="parallelDownloads"></label><input id="sParallel" type="number" min="1" max="32" style="width:80px"></div>
     <div class="fld"><label for="sCompletionAction" data-i="completionAction"></label><select id="sCompletionAction"><option value="none" data-i="actionNone"></option><option value="shutdown" data-i="actionShutdown"></option><option value="sleep" data-i="actionSleep"></option></select></div>
+    <div class="palette-heading" data-i="downloadSchedule"></div>
+    <div class="fld"><label for="sScheduleEnabled" data-i="schedulerEnabled"></label><input id="sScheduleEnabled" class="switch" type="checkbox"></div>
+    <div class="fld"><label for="sScheduleStart" data-i="scheduleStart"></label><input id="sScheduleStart" type="time" required></div>
+    <div class="fld"><label for="sScheduleEnd" data-i="scheduleEnd"></label><input id="sScheduleEnd" type="time" required></div>
+    <div class="fld"><label for="sScheduleAction" data-i="schedulerEndAction"></label><select id="sScheduleAction"><option value="none" data-i="actionNone"></option><option value="shutdown" data-i="actionShutdown"></option><option value="sleep" data-i="actionSleep"></option></select></div>
     <div class="fld dir"><label data-i="folder"></label><input id="sDir" style="flex:1;direction:ltr"><button class="btn" type="button" onclick="browseDir()" data-i="browse"></button></div>
     <div class="palette-heading" data-i="browserIntegration"></div>
     <div class="browser-install-grid" role="group" aria-label="Install browser extension">
@@ -235,7 +320,7 @@ input,select{padding:6px 8px;border-radius:8px;border:1px solid var(--bd);backgr
 </div>
 
 <script>
-const {invoke}=window.__TAURI__.core, {listen}=window.__TAURI__.event;
+const {invoke}=window.__TAURI__.core, {listen,emit}=window.__TAURI__.event;
 const T={
 en:{version:"Version",checkUpdate:"Check for updates",checkingUpdates:"Checking…",upToDate:"You're using the latest version.",updateCheckFailed:"Could not check for updates:",releaseNotes:"What's new",add:"Add URL",resume:"Resume",stop:"Stop",stopAll:"Stop all",del:"Delete",delDone:"Remove finished",settings:"Settings",general:"General",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Start queue",projectPage:"GitHub",updateTitle:"Update available",updatePrompt:"A newer version is available. Review the changes and open its release page to download it.",currentVersion:"Current version",latestVersion:"Latest version",later:"Later",downloadUpdate:"Open download page",groups:"Groups",connections:"Connections",appearance:"Appearance",colorTheme:"Color theme",transparency:"Transparency",completionAction:"When all downloads finish",actionNone:"Do nothing",actionShutdown:"Shut down",actionSleep:"Sleep",browserIntegration:"Browser integration",installFirefox:"Firefox",installEdge:"Edge",installChrome:"Chrome",browserInstallHint:"Choose your browser to open its step-by-step installation guide. The guide language follows the language selected in this app.",browserGuideFailed:"Could not open the browser installation guide:",paletteOcean:"Ocean",paletteViolet:"Violet",paletteEmerald:"Emerald",paletteSunset:"Sunset",paletteRose:"Rose",paletteCyan:"Arctic",paletteAmber:"Amber",paletteIndigo:"Indigo",paletteMint:"Mint",paletteCoral:"Coral",paletteGraphite:"Graphite",themeSystem:"System",themeLight:"Day mode",themeDark:"Night mode",uiScale:"Interface scale",fontSize:"Font size",deleteTitle:"Delete download",deleteHint:"Choose whether to also delete the downloaded file.",removeOnly:"Remove from list",deleteFile:"Delete file",selectAll:"Select visible",selected:"selected",clearSelection:"Clear selection",
  search:"Search downloads…",name:"File name",addedAt:"Added",size:"Size",status:"Status",timeLeft:"Time left",speed:"Speed",downloaded:"Downloaded",info:"Info",
@@ -261,6 +346,8 @@ Object.assign(T,{
  nl:{...T.en,version:"Versie",checkUpdate:"Controleren op updates",checkingUpdates:"Controleren…",upToDate:"Je gebruikt de nieuwste versie.",updateCheckFailed:"Kan niet controleren op updates:",releaseNotes:"Wat is nieuw",add:"URL toevoegen",resume:"Hervatten",stop:"Stoppen",stopAll:"Alles stoppen",del:"Verwijderen",delDone:"Voltooide verwijderen",settings:"Instellingen",general:"Algemeen",proxy:"Proxy",proxyUsed:"Via proxy",startQ:"Wachtrij starten",updateTitle:"Update beschikbaar",updatePrompt:"Er is een nieuwere versie beschikbaar. Bekijk de wijzigingen en open de uitgavepagina om deze te downloaden.",currentVersion:"Huidige versie",latestVersion:"Nieuwste versie",later:"Later",downloadUpdate:"Downloadpagina openen",groups:"Groepen",connections:"Verbindingen",appearance:"Weergave",colorTheme:"Kleurenthema",transparency:"Transparantie",completionAction:"Wanneer alle downloads klaar zijn",actionNone:"Niets doen",actionShutdown:"Computer uitschakelen",actionSleep:"Computer in slaapstand",browserIntegration:"Browserintegratie",browserInstallHint:"Kies je browser om de installatiehandleiding te openen. De handleiding gebruikt de in de app gekozen taal.",browserGuideFailed:"Kan de installatiehandleiding niet openen:",themeSystem:"Systeem",themeLight:"Lichte modus",themeDark:"Donkere modus",uiScale:"Interfacegrootte",fontSize:"Lettergrootte",deleteTitle:"Download verwijderen",deleteHint:"Kies of het gedownloade bestand ook moet worden verwijderd.",removeOnly:"Alleen uit lijst verwijderen",deleteFile:"Bestand verwijderen",selectAll:"Zichtbare selecteren",selected:"geselecteerd",clearSelection:"Selectie wissen",search:"Downloads zoeken…",name:"Bestandsnaam",addedAt:"Toegevoegd",size:"Grootte",status:"Status",timeLeft:"Resterende tijd",speed:"Snelheid",downloaded:"Gedownload",info:"Info",addTitle:"Download toevoegen",addHint:"Eén URL per regel",ok:"OK",cancel:"Annuleren",close:"Sluiten",language:"Taal",conns:"Verbindingen per download",folder:"Opslagmap",browse:"Bladeren…",limit:"Snelheidslimiet (0 = onbeperkt)",resumable:"Hervatbaar",yes:"Ja",no:"Nee",openFile:"Bestand openen",openFolder:"Map openen",details:"Downloaddetails",copyUrl:"Download-URL kopiëren",copyFailed:"Kan de download-URL niet kopiëren.",proxyEnabled:"Proxy voor downloads gebruiken",proxyType:"Proxytype",proxyHost:"Proxyhost",proxyPort:"Proxypoort",proxyUsername:"Gebruikersnaam (optioneel)",proxyPassword:"Wachtwoord (optioneel)",testProxy:"Proxy testen",all:"Alle downloads",compressed:"Gecomprimeerd",documents:"Documenten",music:"Muziek",programs:"Programma's",video:"Video",images:"Afbeeldingen",unfinished:"Onvoltooid",completed:"Voltooid",st_preparing:"Voorbereiden…",st_downloading:"Downloaden",st_paused:"Gepauzeerd",st_completed:"Voltooid",st_error:"Fout",rx:"Ontvangen…",done:"Klaar",wait:"Wachten",active:"Actief",complete:"Voltooid",pauseB:"Pauzeren",resumeB:"Hervatten",delFile:"Bestand(en) ook van de schijf verwijderen?",h:"u",m:"m",s:"s"},
  es:{...T.en,version:"Versión",checkUpdate:"Buscar actualizaciones",checkingUpdates:"Comprobando…",upToDate:"Estás usando la versión más reciente.",updateCheckFailed:"No se pudieron comprobar las actualizaciones:",releaseNotes:"Novedades",add:"Añadir URL",resume:"Reanudar",stop:"Detener",stopAll:"Detener todo",del:"Eliminar",delDone:"Eliminar finalizadas",settings:"Configuración",general:"General",proxy:"Proxy",proxyUsed:"Mediante proxy",startQ:"Iniciar cola",updateTitle:"Actualización disponible",updatePrompt:"Hay una versión más reciente disponible. Revisa los cambios y abre su página de lanzamiento para descargarla.",currentVersion:"Versión actual",latestVersion:"Versión más reciente",later:"Más tarde",downloadUpdate:"Abrir página de descarga",groups:"Grupos",connections:"Conexiones",appearance:"Apariencia",colorTheme:"Tema de color",transparency:"Transparencia",completionAction:"Cuando terminen todas las descargas",actionNone:"No hacer nada",actionShutdown:"Apagar el equipo",actionSleep:"Poner el equipo en suspensión",browserIntegration:"Integración con el navegador",browserInstallHint:"Elige tu navegador para abrir la guía de instalación paso a paso. El idioma seguirá el seleccionado en la aplicación.",browserGuideFailed:"No se pudo abrir la guía de instalación:",themeSystem:"Sistema",themeLight:"Modo claro",themeDark:"Modo oscuro",uiScale:"Escala de interfaz",fontSize:"Tamaño de fuente",deleteTitle:"Eliminar descarga",deleteHint:"Elige si también deseas eliminar el archivo descargado.",removeOnly:"Eliminar solo de la lista",deleteFile:"Eliminar archivo",selectAll:"Seleccionar visibles",selected:"seleccionados",clearSelection:"Borrar selección",search:"Buscar descargas…",name:"Nombre del archivo",addedAt:"Añadido",size:"Tamaño",status:"Estado",timeLeft:"Tiempo restante",speed:"Velocidad",downloaded:"Descargado",info:"Información",addTitle:"Añadir descarga",addHint:"Una URL por línea",ok:"Aceptar",cancel:"Cancelar",close:"Cerrar",language:"Idioma",conns:"Conexiones por descarga",folder:"Carpeta de guardado",browse:"Examinar…",limit:"Límite de velocidad (0 = ilimitado)",resumable:"Reanudable",yes:"Sí",no:"No",openFile:"Abrir archivo",openFolder:"Abrir carpeta",details:"Detalles de descarga",copyUrl:"Copiar URL de descarga",copyFailed:"No se pudo copiar la URL de descarga.",proxyEnabled:"Usar proxy para las descargas",proxyType:"Tipo de proxy",proxyHost:"Servidor proxy",proxyPort:"Puerto proxy",proxyUsername:"Usuario (opcional)",proxyPassword:"Contraseña (opcional)",testProxy:"Probar proxy",all:"Todas las descargas",compressed:"Comprimidos",documents:"Documentos",music:"Música",programs:"Programas",video:"Vídeo",images:"Imágenes",unfinished:"Sin terminar",completed:"Completadas",st_preparing:"Preparando…",st_downloading:"Descargando",st_paused:"En pausa",st_completed:"Completada",st_error:"Error",rx:"Recibiendo…",done:"Hecho",wait:"Esperando",active:"Activas",complete:"Completadas",pauseB:"Pausar",resumeB:"Reanudar",delFile:"¿Eliminar también el archivo o archivos del disco?",h:"h",m:"min",s:"s"}
 });
+Object.assign(T.en,{palettePastel:"Pastel"});
+Object.assign(T.fa,{palettePastel:"پاستیلی"});
 Object.assign(T.en,{testingProxy:"Testing proxy connection…"});
 Object.assign(T.fa,{testingProxy:"در حال آزمایش اتصال…"});
 Object.assign(T.zh,{testingProxy:"正在测试代理连接…"});
@@ -269,6 +356,10 @@ Object.assign(T.ar,{testingProxy:"جارٍ اختبار اتصال الوكيل�
 Object.assign(T.ur,{testingProxy:"پراکسی کنکشن کی جانچ ہو رہی ہے…"});
 Object.assign(T.nl,{testingProxy:"Proxyverbinding testen…"});
 Object.assign(T.es,{testingProxy:"Probando la conexión proxy…"});
+Object.assign(T.en,{parallelDownloads:"Maximum simultaneous downloads",downloadSchedule:"Download schedule",schedulerEnabled:"Enable scheduled downloads",scheduleStart:"Start time",scheduleEnd:"End time",schedulerEndAction:"When the schedule ends",st_waiting:"Waiting in queue"});
+Object.assign(T.fa,{parallelDownloads:"حداکثر دانلود هم‌زمان",downloadSchedule:"زمان‌بندی دانلود",schedulerEnabled:"فعال‌سازی زمان‌بندی دانلود",scheduleStart:"زمان شروع",scheduleEnd:"زمان پایان",schedulerEndAction:"هنگام پایان زمان‌بندی",st_waiting:"در صف انتظار"});
+Object.assign(T.en,{emptyDownloads:"Your download list is clear",emptyDownloadsHint:"Add a link to start downloading. Your active downloads will appear here.",emptySearch:"No matching downloads",emptySearchHint:"Try another search or clear the current filters.",addFirstDownload:"Add a download",clearFilters:"Clear filters"});
+Object.assign(T.fa,{emptyDownloads:"فهرست دانلود خالی است",emptyDownloadsHint:"برای شروع، یک پیوند اضافه کنید. دانلودهای فعال اینجا نمایش داده می‌شوند.",emptySearch:"دانلودی پیدا نشد",emptySearchHint:"عبارت دیگری جستجو کنید یا فیلترها را پاک کنید.",addFirstDownload:"افزودن دانلود",clearFilters:"پاک کردن فیلترها"});
 const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx xls xlsx ppt pptx txt epub odt",music:"mp3 flac wav aac ogg m4a",
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
@@ -277,7 +368,7 @@ const navigatorLanguage=navigator.language.toLowerCase();
 const detectedLanguage=supportedLanguages.find(code=>navigatorLanguage.startsWith(code))||"en";
 let lang=supportedLanguages.includes(localStorage.lang)?localStorage.lang:detectedLanguage, completionAction=["none","shutdown","sleep"].includes(localStorage.completionAction)?localStorage.completionAction:"none";
 const SORT_KEYS=["name","addedAt","size","connections","status","timeLeft","speed"];
-let conns=+localStorage.conns||8, dir=localStorage.dir||"", data=[], sel=null, selectedIds=new Set(), cat="all", q="", appVersion=null;
+let conns=+localStorage.conns||8, parallelDownloads=3, schedulerSettings={enabled:false,start_time:"02:00",end_time:"08:00",end_action:"none"}, dir=localStorage.dir||"", data=[], sel=null, selectedIds=new Set(), cat="all", q="", appVersion=null;
 const connectionSettingsReady=invoke("get_download_connections").then(async saved=>{
  if(saved===null){await invoke("set_download_connections",{connections:conns})}
  else{conns=Math.min(32,Math.max(1,Number(saved)||8));localStorage.conns=conns}
@@ -292,9 +383,9 @@ const readDisplaySetting=(key,min,max,fallback)=>{
 };
 let appScale=readDisplaySetting("appScale",80,120,100), appFontSize=readDisplaySetting("appFontSize",12,18,14), windowOpacity=readDisplaySetting("windowOpacity",30,100,100);
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
-const PALETTES=[{id:"ocean",swatch:"linear-gradient(135deg,#2b7de9 0 50%,#55c6e8 50%)"},{id:"violet",swatch:"linear-gradient(135deg,#8254d7 0 50%,#c4a5ff 50%)"},{id:"emerald",swatch:"linear-gradient(135deg,#16865b 0 50%,#72d5a4 50%)"},{id:"sunset",swatch:"linear-gradient(135deg,#e66b3d 0 50%,#ffc078 50%)"},{id:"rose",swatch:"linear-gradient(135deg,#d94e83 0 50%,#ffa9c7 50%)"},{id:"cyan",swatch:"linear-gradient(135deg,#078ba8 0 50%,#72dce9 50%)"},{id:"amber",swatch:"linear-gradient(135deg,#bd821b 0 50%,#f2d17b 50%)"},{id:"indigo",swatch:"linear-gradient(135deg,#5865d9 0 50%,#a5adff 50%)"},{id:"mint",swatch:"linear-gradient(135deg,#159b83 0 50%,#8be0c8 50%)"},{id:"coral",swatch:"linear-gradient(135deg,#ed6658 0 50%,#ffb2a4 50%)"},{id:"graphite",swatch:"linear-gradient(135deg,#566474 0 50%,#b5c0cc 50%)"}];
+const PALETTES=[{id:"ocean",swatch:"linear-gradient(135deg,#2b7de9 0 50%,#55c6e8 50%)"},{id:"violet",swatch:"linear-gradient(135deg,#8254d7 0 50%,#c4a5ff 50%)"},{id:"emerald",swatch:"linear-gradient(135deg,#16865b 0 50%,#72d5a4 50%)"},{id:"sunset",swatch:"linear-gradient(135deg,#e66b3d 0 50%,#ffc078 50%)"},{id:"rose",swatch:"linear-gradient(135deg,#d94e83 0 50%,#ffa9c7 50%)"},{id:"cyan",swatch:"linear-gradient(135deg,#078ba8 0 50%,#72dce9 50%)"},{id:"amber",swatch:"linear-gradient(135deg,#bd821b 0 50%,#f2d17b 50%)"},{id:"indigo",swatch:"linear-gradient(135deg,#5865d9 0 50%,#a5adff 50%)"},{id:"mint",swatch:"linear-gradient(135deg,#159b83 0 50%,#8be0c8 50%)"},{id:"coral",swatch:"linear-gradient(135deg,#ed6658 0 50%,#ffb2a4 50%)"},{id:"graphite",swatch:"linear-gradient(135deg,#566474 0 50%,#b5c0cc 50%)"},{id:"pastel",swatch:"linear-gradient(135deg,#d9c8ff 0 34%,#ffd1e1 34% 67%,#c9efdf 67%)"}];
 let colorTheme=PALETTES.some(p=>p.id===localStorage.colorTheme)?localStorage.colorTheme:"ocean";
-const $=id=>document.getElementById(id), t=k=>T[lang][k]||k;
+const $=id=>document.getElementById(id), t=k=>T[lang][k]||T.en[k]||k;
 function applyDisplaySettings(){
  document.documentElement.style.setProperty("--app-scale",String(appScale/100));
  document.documentElement.style.setProperty("--app-font-size",appFontSize+"px");
@@ -346,13 +437,43 @@ function render(){
  if(sortKey){const direction=sortDirection==="ascending"?1:-1;vis.sort((a,b)=>{let av,bv;switch(sortKey){case"name":av=a.name.toLocaleLowerCase();bv=b.name.toLocaleLowerCase();break;case"addedAt":av=a.added_at_ms??null;bv=b.added_at_ms??null;break;case"size":av=a.total??null;bv=b.total??null;break;case"connections":av=a.segments.filter(s=>s.state===1).length;bv=b.segments.filter(s=>s.state===1).length;break;case"status":av=a.status;bv=b.status;break;case"timeLeft":av=a.eta??null;bv=b.eta??null;break;case"speed":av=a.speed??null;bv=b.speed??null;break;}if(av===null)return bv===null?0:1;if(bv===null)return -1;return(typeof av==="string"?av.localeCompare(bv):av-bv)*direction})}
  document.querySelectorAll("th[data-sort]").forEach(header=>{const active=header.dataset.sort===sortKey;header.setAttribute("aria-sort",active?sortDirection:"none")});
  selectedIds=new Set([...selectedIds].filter(id=>data.some(d=>d.id===id)));
- $("tb").innerHTML=vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
+ const rowsHtml=vis.length?vis.map(d=>{const p=pct(d),c=d.status==="completed"?"ok":d.status==="error"?"er":"";
   const st=d.status==="error"?esc(d.error||t("st_error")):t("st_"+d.status);
   const activeConnections=d.segments.filter(s=>s.state===1).length;
   return `<tr class="r ${selectedIds.has(d.id)?"sel":""}" data-id="${d.id}"><td class="pick"><input type="checkbox" data-select-id="${d.id}" aria-label="Select ${esc(d.name)}" ${selectedIds.has(d.id)?"checked":""}></td><td class="n" title="${esc(d.name)}">${esc(d.name)}${d.proxy_used?`<span class="proxy-badge" title="${t("proxyUsed")}">↗ ${t("proxy")}</span>`:""}</td><td title="${t("addedAt")}">${addedAt(d)}</td><td>${bytes(d.total)}</td>
   <td title="${t("connections")}">${nf(activeConnections,0)}/${nf(d.connections,0)}</td>
   <td><div class="pb ${c} ${p>=55?"is-over-half":""} ${d.status==="downloading"?"active":""}"><div style="width:${p}%;--glow-delay:-${(animationTime%2400)/1000}s;--stripes-delay:-${(animationTime%1000)/1000}s"></div><b>${nf(p)}%</b></div><small>${st}</small></td>
-  <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join("");
+  <td>${d.status==="downloading"?dur(d.eta):"—"}</td><td>${d.status==="downloading"?bytes(d.speed)+"/s":"—"}</td></tr>`}).join(""):`<tr class="empty-row"><td colspan="8"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7v23m-9-9 9 9 9-9M10 31v8h28v-8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><strong>${t(data.length?"emptySearch":"emptyDownloads")}</strong><span>${t(data.length?"emptySearchHint":"emptyDownloadsHint")}</span><button type="button" class="btn p" onclick="${data.length?"clearDownloadFilters()":"openAdd()"}">${t(data.length?"clearFilters":"addFirstDownload")}</button></div></td></tr>`;
+ const tbody=$("tb"),template=document.createElement("template");template.innerHTML=rowsHtml;
+ const existingRows=new Map([...tbody.querySelectorAll("tr.r")].map(row=>[row.dataset.id,row]));
+ if(existingRows.size===0){
+  tbody.replaceChildren(template.content);
+ }else{
+  let nextRow=tbody.firstElementChild;
+  for(const incomingRow of template.content.children){
+   const existingRow=incomingRow.matches("tr.r")?existingRows.get(incomingRow.dataset.id):null;
+   const row=existingRow||incomingRow;
+   if(existingRow){
+    row.className=incomingRow.className;
+    for(let index=0;index<incomingRow.cells.length;index++){
+     const incomingCell=incomingRow.cells[index],cell=row.cells[index];
+     if(!cell){row.appendChild(incomingCell);continue}
+     for(const attribute of [...cell.attributes])if(!incomingCell.hasAttribute(attribute.name))cell.removeAttribute(attribute.name);
+     for(const attribute of incomingCell.attributes)cell.setAttribute(attribute.name,attribute.value);
+     const checkbox=cell.querySelector("input[data-select-id]"),incomingCheckbox=incomingCell.querySelector("input[data-select-id]");
+     if(checkbox&&incomingCheckbox){
+      for(const attribute of [...checkbox.attributes])if(!incomingCheckbox.hasAttribute(attribute.name))checkbox.removeAttribute(attribute.name);
+      for(const attribute of incomingCheckbox.attributes)checkbox.setAttribute(attribute.name,attribute.value);
+      checkbox.checked=incomingCheckbox.checked;
+     }else cell.innerHTML=incomingCell.innerHTML;
+    }
+    while(row.cells.length>incomingRow.cells.length)row.deleteCell(-1);
+   }
+   if(row!==nextRow)tbody.insertBefore(row,nextRow);
+   nextRow=row.nextElementSibling;
+  }
+  while(nextRow){const following=nextRow.nextElementSibling;nextRow.remove();nextRow=following}
+ }
  const selectVisible=$("selectVisible");selectVisible.checked=vis.length>0&&vis.every(d=>selectedIds.has(d.id));selectVisible.indeterminate=vis.some(d=>selectedIds.has(d.id))&&!selectVisible.checked;selectVisible.title=t("selectAll");selectVisible.setAttribute("aria-label",t("selectAll"));
  const cats=$("cats");
  if(cats.childElementCount!==CATS.length){
@@ -370,9 +491,10 @@ function render(){
  if(!$("rowMenu").hidden)renderRowMenu();
 }
 function hideRowMenu(){$("rowMenu").hidden=true}
+function clearDownloadFilters(){q="";cat="all";$("q").value="";render()}
 function renderRowMenu(){
  const d=data.find(x=>x.id===sel);if(!d){hideRowMenu();return}
- $("rowMenu").querySelector('[data-action="toggle"]').textContent=t(d.status==="downloading"?"pauseB":"resumeB");
+ $("rowMenu").querySelector('[data-action="toggle"]').textContent=t(["downloading","waiting"].includes(d.status)?"pauseB":"resumeB");
  $("rowMenu").querySelector('[data-action="toggle"]').disabled=d.status==="completed"||d.status==="preparing";
  $("rowMenu").querySelector('[data-action="openFile"]').disabled=d.status!=="completed";
 }
@@ -409,7 +531,7 @@ async function runRowAction(action,id){
  try{
   switch(action){
    case "toggle":
-    if(d.status==="downloading")await invoke("pause",{id});
+    if(["downloading","waiting"].includes(d.status))await invoke("pause",{id});
     else {await resumeDownload(id);return}
     break;
    case "openFile":await invoke("open_item",{id,folder:false});break;
@@ -433,11 +555,20 @@ async function doAdd(){
  }
 }
 async function openSet(){
- $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sDir").value=dir;$("sCompletionAction").value=completionAction;
+ $("sLang").value=lang;$("sTheme").value=themeMode;$("sConn").value=conns;$("sParallel").value=parallelDownloads;$("sDir").value=dir;$("sCompletionAction").value=completionAction;
+ $("proxyError").textContent="";
+ try{
+  parallelDownloads=await invoke("get_max_parallel_downloads");
+  schedulerSettings=await invoke("get_scheduler_settings");
+  $("sParallel").value=parallelDownloads;
+  $("sScheduleEnabled").checked=schedulerSettings.enabled;
+  $("sScheduleStart").value=schedulerSettings.start_time;
+  $("sScheduleEnd").value=schedulerSettings.end_time;
+  $("sScheduleAction").value=schedulerSettings.end_action;
+ }catch(error){$("proxyError").textContent=String(error)}
  $("sScale").value=appScale;$("sScaleValue").textContent=appScale+"%";
  $("sFontSize").value=appFontSize;$("sFontSizeValue").textContent=appFontSize+" px";
  $("sTransparency").value=windowOpacity;$("sTransparencyValue").textContent=(100-windowOpacity)+"%";
- $("proxyError").textContent="";
  try{
   const proxy=await invoke("get_proxy_settings");
   $("sProxyEnabled").checked=proxy.enabled;$("sProxyType").value=proxy.protocol;
@@ -491,18 +622,30 @@ async function saveSet(){
  const nextCompletionAction=["none","shutdown","sleep"].includes($("sCompletionAction").value)?$("sCompletionAction").value:"none";
  try{await invoke("set_completion_action",{action:nextCompletionAction})}
  catch(error){$("proxyError").textContent=String(error);return}
+ const nextParallel=Math.min(32,Math.max(1,Number($("sParallel").value)||3));
+ try{await invoke("set_max_parallel_downloads",{count:nextParallel})}
+ catch(error){$("proxyError").textContent=String(error);return}
+ const nextSchedulerSettings={
+  enabled:$("sScheduleEnabled").checked,
+  start_time:$("sScheduleStart").value,
+  end_time:$("sScheduleEnd").value,
+  end_action:$("sScheduleAction").value
+ };
+ try{await invoke("set_scheduler_settings",{settings:nextSchedulerSettings})}
+ catch(error){$("proxyError").textContent=String(error);return}
  const nextDir=$("sDir").value.trim();
  try{await invoke("set_download_dir",{path:nextDir})}
  catch(error){$("proxyError").textContent=String(error);return}
  const nextConnections=Math.min(32,Math.max(1,+$("sConn").value||8));
  try{await invoke("set_download_connections",{connections:nextConnections})}
  catch(error){$("proxyError").textContent=String(error);return}
- lang=$("sLang").value;themeMode=$("sTheme").value;conns=nextConnections;dir=nextDir;completionAction=nextCompletionAction;
+ lang=$("sLang").value;themeMode=$("sTheme").value;conns=nextConnections;parallelDownloads=nextParallel;schedulerSettings=nextSchedulerSettings;dir=nextDir;completionAction=nextCompletionAction;
  appScale=Math.min(120,Math.max(80,Number($("sScale").value)||100));
  appFontSize=Math.min(18,Math.max(12,Number($("sFontSize").value)||14));
  windowOpacity=Math.min(100,Math.max(30,Number($("sTransparency").value)||100));
  localStorage.lang=lang;localStorage.theme=themeMode;localStorage.conns=conns;localStorage.dir=dir;localStorage.completionAction=completionAction;
  localStorage.appScale=appScale;localStorage.appFontSize=appFontSize;localStorage.windowOpacity=windowOpacity;
+ emit("language-changed",lang).catch(error=>console.error("Could not notify download windows about the language change:",error));
  $("dSet").close();applyTheme();applyLang();applyDisplaySettings()}
 $("sProxyEnabled").addEventListener("change",applyProxySettings);
 async function openProjectPage(){
@@ -545,7 +688,7 @@ function sortBy(key){if(!SORT_KEYS.includes(key))return;if(sortKey===key)sortDir
 document.querySelector("thead").addEventListener("click",e=>{const header=e.target.closest("th[data-sort]");if(header)sortBy(header.dataset.sort)});
 document.querySelector("thead").addEventListener("keydown",e=>{const header=e.target.closest("th[data-sort]");if(header&&(e.key==="Enter"||e.key===" ")){e.preventDefault();sortBy(header.dataset.sort)}});
 $("selectVisible").addEventListener("change",e=>{const visible=data.filter(d=>(!q||d.name.toLowerCase().includes(q))&&(cat==="all"||(cat==="unfinished"?d.status!=="completed":cat==="completed"?d.status==="completed":catOf(d)===cat)));for(const d of visible){if(e.target.checked)selectedIds.add(d.id);else selectedIds.delete(d.id)}sel=null;render()});
-$("tb").addEventListener("click",e=>{const r=e.target.closest("tr.r");if(!r||e.target.closest("input[type=checkbox]"))return;sel=+r.dataset.id;if(e.ctrlKey||e.metaKey){selectedIds.has(sel)?selectedIds.delete(sel):selectedIds.add(sel)}else{selectedIds.clear();selectedIds.add(sel)}render()});
+$("tb").addEventListener("click",e=>{const r=e.target.closest("tr.r");if(!r||e.target.closest("input[type=checkbox]"))return;sel=+r.dataset.id;selectedIds.clear();selectedIds.add(sel);render()});
 $("tb").addEventListener("dblclick",e=>{const r=e.target.closest("tr.r");if(r)resumeDownload(+r.dataset.id)});
 document.documentElement.append($("rowMenu"));
 $("tb").addEventListener("contextmenu",e=>{

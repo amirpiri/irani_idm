@@ -1,6 +1,7 @@
 mod engine;
 
 use engine::{Manager, ProxySettings};
+use chrono::{Local, NaiveTime};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -31,6 +32,104 @@ const LATEST_RELEASE_API: &str = "https://api.github.com/repos/amirpiri/irani_id
 
 #[derive(Clone)]
 struct CompletionActionState(Arc<Mutex<String>>);
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+struct SchedulerSettings {
+    enabled: bool,
+    start_time: String,
+    end_time: String,
+    end_action: String,
+}
+
+impl Default for SchedulerSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            start_time: "02:00".into(),
+            end_time: "08:00".into(),
+            end_action: "none".into(),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct SchedulerState {
+    settings: Arc<Mutex<SchedulerSettings>>,
+    store: PathBuf,
+}
+
+impl SchedulerState {
+    fn load(data_dir: &Path) -> Self {
+        let store = data_dir.join("scheduler-settings.json");
+        let settings = std::fs::read(&store)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<SchedulerSettings>(&bytes).ok())
+            .filter(|settings| validate_scheduler_settings(settings).is_ok())
+            .unwrap_or_default();
+        Self {
+            settings: Arc::new(Mutex::new(settings)),
+            store,
+        }
+    }
+
+    fn get(&self) -> Result<SchedulerSettings, String> {
+        self.settings
+            .lock()
+            .map(|settings| settings.clone())
+            .map_err(|_| "Scheduler settings are unavailable".into())
+    }
+
+    fn set(&self, settings: SchedulerSettings) -> Result<(), String> {
+        validate_scheduler_settings(&settings)?;
+        let bytes = serde_json::to_vec_pretty(&settings).map_err(|error| error.to_string())?;
+        std::fs::write(&self.store, bytes).map_err(|error| error.to_string())?;
+        *self
+            .settings
+            .lock()
+            .map_err(|_| "Scheduler settings are unavailable")? = settings;
+        Ok(())
+    }
+}
+
+fn validate_scheduler_settings(settings: &SchedulerSettings) -> Result<(NaiveTime, NaiveTime), String> {
+    let start = NaiveTime::parse_from_str(&settings.start_time, "%H:%M")
+        .map_err(|_| "Enter a valid schedule start time".to_string())?;
+    let end = NaiveTime::parse_from_str(&settings.end_time, "%H:%M")
+        .map_err(|_| "Enter a valid schedule end time".to_string())?;
+    if start == end {
+        return Err("Schedule start and end times must be different".into());
+    }
+    if !["none", "shutdown", "sleep"].contains(&settings.end_action.as_str()) {
+        return Err("Unsupported scheduler end action".into());
+    }
+    Ok((start, end))
+}
+
+fn schedule_is_active(settings: &SchedulerSettings, now: NaiveTime) -> Result<bool, String> {
+    if !settings.enabled {
+        return Ok(false);
+    }
+    let (start, end) = validate_scheduler_settings(settings)?;
+    Ok(if start < end {
+        now >= start && now < end
+    } else {
+        now >= start || now < end
+    })
+}
+
+fn schedule_ended(previously_active: bool, active: bool) -> bool {
+    previously_active && !active
+}
+
+fn scheduler_end_action<'a>(
+    settings: &'a SchedulerSettings,
+    previously_active: bool,
+    active: bool,
+) -> Option<&'a str> {
+    (settings.enabled && schedule_ended(previously_active, active) && settings.end_action != "none")
+        .then_some(settings.end_action.as_str())
+}
 
 #[derive(Default)]
 struct CompletionTracker {
@@ -152,11 +251,17 @@ fn run_completion_action(action: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         match action.as_str() {
-            "shutdown" => std::process::Command::new("shutdown.exe")
-                .args(["/s", "/t", "0"])
-                .spawn()
-                .map(|_| ())
-                .map_err(|error| format!("Could not start shutdown: {error}")),
+            "shutdown" => {
+                let status = std::process::Command::new("shutdown.exe")
+                    .args(["/s", "/t", "0"])
+                    .status()
+                    .map_err(|error| format!("Could not start shutdown: {error}"))?;
+                if status.success() {
+                    Ok(())
+                } else {
+                    Err(format!("shutdown.exe failed with status {status}"))
+                }
+            }
             "sleep" => {
                 // SetSuspendState is a Win32 API, not a rundll32 entry point.
                 // Call it directly to use its actual Windows function signature.
@@ -252,6 +357,29 @@ fn set_completion_action(
         .lock()
         .map_err(|_| "Completion action settings are unavailable")? = action;
     Ok(())
+}
+
+#[tauri::command]
+fn get_scheduler_settings(state: State<SchedulerState>) -> Result<SchedulerSettings, String> {
+    state.get()
+}
+
+#[tauri::command]
+fn set_scheduler_settings(
+    state: State<SchedulerState>,
+    settings: SchedulerSettings,
+) -> Result<(), String> {
+    state.set(settings)
+}
+
+#[tauri::command]
+fn get_max_parallel_downloads(m: State<Manager>) -> u32 {
+    m.max_parallel()
+}
+
+#[tauri::command]
+fn set_max_parallel_downloads(m: State<Manager>, count: u32) -> Result<(), String> {
+    m.set_max_parallel(count)
 }
 
 #[tauri::command]
@@ -943,7 +1071,21 @@ pub fn run() {
                 }
             }
             let mgr = Manager::load(&dir);
+            let scheduler_state = SchedulerState::load(&dir);
+            let initial_scheduler_settings = scheduler_state
+                .get()
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
+            let initial_schedule_active = schedule_is_active(
+                &initial_scheduler_settings,
+                Local::now().time(),
+            )
+            .unwrap_or(false);
+            mgr.set_queue_enabled(!initial_scheduler_settings.enabled || initial_schedule_active);
+            if initial_scheduler_settings.enabled && initial_schedule_active {
+                mgr.resume_all();
+            }
             app.manage(mgr.clone());
+            app.manage(scheduler_state.clone());
             let download_dir =
                 DownloadDirectory(Arc::new(Mutex::new(load_download_directory(&dir))));
             app.manage(download_dir.clone());
@@ -1033,6 +1175,8 @@ pub fn run() {
                 let (mut last, mut ticks) = (Instant::now(), 0u32);
                 let mut last_tray_active = None;
                 let mut last_tray_counts = None;
+                let mut scheduler_was_active = initial_schedule_active;
+                let mut previous_scheduler_settings = initial_scheduler_settings;
                 // Seed persisted history so it is not mistaken for new work,
                 // while enrolling any downloads already active at startup.
                 let initial_downloads = mgr.views(0.5);
@@ -1046,6 +1190,53 @@ pub fn run() {
                     tokio::time::sleep(Duration::from_millis(500)).await;
                     let dt = last.elapsed().as_secs_f64();
                     last = Instant::now();
+                    match scheduler_state.get() {
+                        Ok(settings) => {
+                            if !settings.enabled {
+                                mgr.set_queue_enabled(true);
+                                if previous_scheduler_settings.enabled {
+                                    mgr.resume_all();
+                                }
+                                scheduler_was_active = false;
+                            } else {
+                                match schedule_is_active(&settings, Local::now().time()) {
+                                    Ok(active) => {
+                                        if active && !scheduler_was_active {
+                                            mgr.set_queue_enabled(true);
+                                            mgr.resume_all();
+                                        } else if schedule_ended(scheduler_was_active, active) {
+                                            mgr.set_queue_enabled(false);
+                                            mgr.pause_all();
+                                            if let Some(action) = scheduler_end_action(
+                                                &settings,
+                                                scheduler_was_active,
+                                                active,
+                                            ) {
+                                                if let Err(error) =
+                                                    run_completion_action(action.into())
+                                                {
+                                                    eprintln!("Scheduler end action failed: {error}");
+                                                    let _ = handle.emit("completion-action-error", error);
+                                                }
+                                            }
+                                        } else if !active {
+                                            mgr.set_queue_enabled(false);
+                                            if !previous_scheduler_settings.enabled && settings.enabled {
+                                                mgr.pause_all();
+                                            }
+                                        }
+                                        scheduler_was_active = active;
+                                    }
+                                    Err(error) => {
+                                        eprintln!("Invalid scheduler settings: {error}");
+                                    }
+                                }
+                            }
+                            previous_scheduler_settings = settings;
+                        }
+                        Err(error) => eprintln!("Could not read scheduler settings: {error}"),
+                    }
+                    mgr.pump_queue();
                     let downloads = mgr.views(dt);
                     let active_count = downloads
                         .iter()
@@ -1109,6 +1300,10 @@ pub fn run() {
             app_version,
             run_completion_action,
             set_completion_action,
+            get_scheduler_settings,
+            set_scheduler_settings,
+            get_max_parallel_downloads,
+            set_max_parallel_downloads,
             check_for_update,
             add_download,
             get_download_connections,
@@ -1147,7 +1342,12 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{browser_install_guide_url, release_version, CompletionTracker, ConnectionSettings};
+    use super::{
+        browser_install_guide_url, release_version, schedule_ended, schedule_is_active,
+        scheduler_end_action, validate_scheduler_settings, CompletionTracker, ConnectionSettings,
+        SchedulerSettings, SchedulerState,
+    };
+    use chrono::NaiveTime;
 
     #[test]
     fn connection_setting_persists_and_is_clamped_to_supported_range() {
@@ -1172,6 +1372,108 @@ mod tests {
         reloaded.set(99).unwrap();
         assert_eq!(reloaded.get(), 32);
 
+        std::fs::remove_dir_all(data_dir).unwrap();
+    }
+
+    #[test]
+    fn scheduler_supports_daytime_and_overnight_windows() {
+        let daytime = SchedulerSettings {
+            enabled: true,
+            start_time: "02:00".into(),
+            end_time: "08:00".into(),
+            end_action: "none".into(),
+        };
+        assert!(schedule_is_active(
+            &daytime,
+            NaiveTime::from_hms_opt(2, 0, 0).unwrap()
+        )
+        .unwrap());
+        assert!(schedule_is_active(
+            &daytime,
+            NaiveTime::from_hms_opt(7, 59, 0).unwrap()
+        )
+        .unwrap());
+        assert!(!schedule_is_active(
+            &daytime,
+            NaiveTime::from_hms_opt(8, 0, 0).unwrap()
+        )
+        .unwrap());
+
+        let overnight = SchedulerSettings {
+            start_time: "22:00".into(),
+            end_time: "06:00".into(),
+            ..daytime
+        };
+        assert!(schedule_is_active(
+            &overnight,
+            NaiveTime::from_hms_opt(23, 30, 0).unwrap()
+        )
+        .unwrap());
+        assert!(schedule_is_active(
+            &overnight,
+            NaiveTime::from_hms_opt(5, 59, 0).unwrap()
+        )
+        .unwrap());
+        assert!(!schedule_is_active(
+            &overnight,
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap()
+        )
+        .unwrap());
+    }
+
+    #[test]
+    fn scheduler_end_transition_runs_once_after_an_active_window() {
+        assert!(schedule_ended(true, false));
+        assert!(!schedule_ended(false, false));
+        assert!(!schedule_ended(true, true));
+
+        let settings = SchedulerSettings {
+            enabled: true,
+            end_action: "shutdown".into(),
+            ..SchedulerSettings::default()
+        };
+        assert_eq!(
+            scheduler_end_action(&settings, true, false),
+            Some("shutdown")
+        );
+        assert_eq!(scheduler_end_action(&settings, true, true), None);
+        assert_eq!(scheduler_end_action(&settings, false, false), None);
+        let no_action = SchedulerSettings {
+            end_action: "none".into(),
+            ..settings
+        };
+        assert_eq!(scheduler_end_action(&no_action, true, false), None);
+    }
+
+    #[test]
+    fn scheduler_settings_are_validated_and_persisted() {
+        let data_dir = std::env::temp_dir().join(format!(
+            "irani-idm-scheduler-settings-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let state = SchedulerState::load(&data_dir);
+        assert_eq!(state.get().unwrap().start_time, "02:00");
+
+        let settings = SchedulerSettings {
+            enabled: true,
+            start_time: "22:00".into(),
+            end_time: "06:00".into(),
+            end_action: "sleep".into(),
+        };
+        state.set(settings).unwrap();
+        assert_eq!(SchedulerState::load(&data_dir).get().unwrap().end_action, "sleep");
+
+        let invalid = SchedulerSettings {
+            start_time: "08:00".into(),
+            end_time: "08:00".into(),
+            ..SchedulerSettings::default()
+        };
+        assert!(validate_scheduler_settings(&invalid).is_err());
         std::fs::remove_dir_all(data_dir).unwrap();
     }
 

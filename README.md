@@ -16,8 +16,9 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Open each download in its own live details window sized to its connection count, with an IDM-style segmented progress bar for connection parts
 - Right-click download menu for pause/resume, open, copy URL, details, and delete
 - Category groups, search, queue start/stop all
+- Configure up to 32 simultaneous downloads (default: 3) and optionally schedule the queue for daily local-time start/end times; the queue pauses at the end, with optional shutdown or sleep actions
 - Choose an action to run after all downloads finish: shut down the computer, put it to sleep, or do nothing
-- Day, night, and system appearance modes with eleven color themes (Ocean, Violet, Emerald, Sunset, Rose, Arctic, Amber, Indigo, Mint, Coral, Graphite)
+- Day, night, and system appearance modes with twelve color themes (Ocean, Violet, Emerald, Sunset, Rose, Arctic, Amber, Indigo, Mint, Coral, Graphite, Pastel)
 - Adjustable window transparency
 - English + Persian UI (switch in Settings; RTL layout applied automatically)
 - Adjustable interface scale and font size

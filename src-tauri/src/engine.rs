@@ -7,7 +7,7 @@ use std::{
     io::SeekFrom,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicU8, Ordering::Relaxed},
         Arc, Mutex,
     },
     time::{Duration, Instant},
@@ -39,6 +39,7 @@ impl Seg {
 #[derive(Clone, PartialEq)]
 enum Status {
     Preparing,
+    Queued,
     Paused,
     Downloading,
     Completed,
@@ -196,6 +197,9 @@ pub struct Manager {
     proxy_store: PathBuf,
     proxy: Arc<Mutex<ProxySettings>>,
     next_id: Arc<AtomicU64>,
+    max_parallel: Arc<AtomicU32>,
+    queue_enabled: Arc<AtomicBool>,
+    parallel_store: PathBuf,
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -314,6 +318,12 @@ impl Manager {
         let proxy_store = data_dir.join("proxy.json");
         let proxy: ProxySettings = std::fs::read(&proxy_store).ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default();
+        let parallel_store = data_dir.join("max-parallel-downloads.txt");
+        let max_parallel = std::fs::read_to_string(&parallel_store)
+            .ok()
+            .and_then(|value| value.trim().parse::<u32>().ok())
+            .filter(|value| (1..=32).contains(value))
+            .unwrap_or(3);
         let client = build_client(&proxy).expect("valid saved proxy settings");
         Manager {
             items: Arc::new(Mutex::new(map)),
@@ -322,6 +332,9 @@ impl Manager {
             proxy_store,
             proxy: Arc::new(Mutex::new(proxy)),
             next_id: Arc::new(AtomicU64::new(max + 1)),
+            max_parallel: Arc::new(AtomicU32::new(max_parallel)),
+            queue_enabled: Arc::new(AtomicBool::new(true)),
+            parallel_store,
         }
     }
 
@@ -483,6 +496,7 @@ impl Manager {
         };
         let (status, error) = match &it.status {
             Status::Preparing => ("preparing", None),
+            Status::Queued => ("waiting", None),
             Status::Paused => ("paused", None),
             Status::Downloading => ("downloading", None),
             Status::Completed => ("completed", None),
@@ -530,8 +544,10 @@ impl Manager {
         let id = self.next_id.fetch_add(1, Relaxed);
         {
             let mut items = self.items.lock().unwrap();
-            if items.values().any(|item| item.url == url && item.status == Status::Preparing) {
-                return Err("This URL is already being prepared".into());
+            if items.values().any(|item| {
+                item.url == url && matches!(item.status, Status::Preparing | Status::Queued)
+            }) {
+                return Err("This URL is already queued or being prepared".into());
             }
             items.insert(
                 id,
@@ -546,7 +562,7 @@ impl Manager {
                     total: None,
                     resumable: false,
                     file_created: false,
-                    status: Status::Preparing,
+                    status: Status::Queued,
                     proxy_used: false,
                     restart_after_cancel: false,
                     connections,
@@ -561,8 +577,7 @@ impl Manager {
             );
         }
         self.save();
-        let manager = self.clone();
-        tauri::async_runtime::spawn(async move { manager.prepare(id).await });
+        self.pump_queue();
         Ok(id)
     }
 
@@ -901,39 +916,112 @@ impl Manager {
     }
 
     pub fn resume(&self, id: u64) {
-        let prepare = {
+        let queued = {
             let mut items = self.items.lock().unwrap();
             let Some(item) = items.get_mut(&id) else { return };
             if item.removing || !matches!(item.status, Status::Paused | Status::Error(_)) {
                 return;
             }
             item.cancel.store(false, Relaxed);
-            if item.segs.is_empty() {
-                item.status = Status::Preparing;
-                true
-            } else {
-                false
-            }
+            item.status = Status::Queued;
+            true
         };
-        let manager = self.clone();
-        if prepare {
+        if queued {
             self.save();
-            tauri::async_runtime::spawn(async move { manager.prepare(id).await });
-        } else {
-            tauri::async_runtime::spawn(async move { manager.run(id).await });
+            self.pump_queue();
         }
     }
     pub fn pause(&self, id: u64) {
-        if let Some(it) = self.items.lock().unwrap().get(&id) {
+        if let Some(it) = self.items.lock().unwrap().get_mut(&id) {
+            if it.status == Status::Queued {
+                it.status = Status::Paused;
+            }
             it.cancel.store(true, Relaxed);
         }
+        self.save();
+        self.pump_queue();
     }
     pub fn resume_all(&self) {
-        let ids: Vec<u64> = self.items.lock().unwrap().keys().cloned().collect();
-        ids.into_iter().for_each(|i| self.resume(i));
+        {
+            let mut items = self.items.lock().unwrap();
+            for item in items.values_mut() {
+                if !item.removing && matches!(item.status, Status::Paused | Status::Error(_)) {
+                    item.cancel.store(false, Relaxed);
+                    item.status = Status::Queued;
+                }
+            }
+        }
+        self.save();
+        self.pump_queue();
     }
     pub fn pause_all(&self) {
-        self.items.lock().unwrap().values().for_each(|i| i.cancel.store(true, Relaxed));
+        let mut items = self.items.lock().unwrap();
+        for item in items.values_mut() {
+            if item.status == Status::Queued {
+                item.status = Status::Paused;
+            }
+            item.cancel.store(true, Relaxed);
+        }
+        drop(items);
+        self.save();
+    }
+    pub fn max_parallel(&self) -> u32 {
+        self.max_parallel.load(Relaxed)
+    }
+    pub fn set_max_parallel(&self, count: u32) -> Result<(), String> {
+        let count = count.clamp(1, 32);
+        std::fs::write(&self.parallel_store, count.to_string())
+            .map_err(|error| error.to_string())?;
+        self.max_parallel.store(count, Relaxed);
+        self.pump_queue();
+        Ok(())
+    }
+    pub fn set_queue_enabled(&self, enabled: bool) {
+        self.queue_enabled.store(enabled, Relaxed);
+        if enabled {
+            self.pump_queue();
+        }
+    }
+    pub fn pump_queue(&self) {
+        if !self.queue_enabled.load(Relaxed) {
+            return;
+        }
+        loop {
+            let next = {
+                let mut items = self.items.lock().unwrap();
+                let active = items
+                    .values()
+                    .filter(|item| matches!(item.status, Status::Preparing | Status::Downloading))
+                    .count();
+                if active >= self.max_parallel.load(Relaxed) as usize {
+                    None
+                } else {
+                    items
+                        .iter_mut()
+                        .filter(|(_, item)| !item.removing && item.status == Status::Queued)
+                        .min_by_key(|(_, item)| item.added_at_ms)
+                        .map(|(&id, item)| {
+                            item.cancel.store(false, Relaxed);
+                            if item.segs.is_empty() {
+                                item.status = Status::Preparing;
+                                (id, true)
+                            } else {
+                                item.status = Status::Downloading;
+                                (id, false)
+                            }
+                        })
+                }
+            };
+            let Some((id, prepare)) = next else { break };
+            let manager = self.clone();
+            tauri::async_runtime::spawn(async move {
+                if prepare {
+                    manager.prepare(id).await;
+                } else {
+                    manager.run(id).await;
+                }
+            });
+        }
     }
     pub fn set_limit(&self, id: u64, kbps: u64) {
         if let Some(it) = self.items.lock().unwrap().get(&id) {
@@ -1108,6 +1196,8 @@ impl Manager {
         self.save();
         if restart {
             self.resume(id);
+        } else {
+            self.pump_queue();
         }
     }
 }
@@ -1618,6 +1708,7 @@ mod tests {
     #[tokio::test]
     async fn add_returns_while_metadata_probe_is_pending() {
         let (manager, path, original_id) = manager_with_download();
+        manager.set_max_parallel(1).unwrap();
         let unrelated_file = path.parent().unwrap().join("slow.bin");
         std::fs::write(&unrelated_file, b"preserve").unwrap();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -1638,11 +1729,40 @@ mod tests {
 
         assert!(started.elapsed() < Duration::from_secs(1));
         assert_eq!(manager.view(id).unwrap().status, "preparing");
+        let queued_id = manager
+            .add(
+                format!("http://{address}/queued.bin"),
+                path.parent().unwrap().to_path_buf(),
+                8,
+            )
+            .unwrap();
+        assert_eq!(manager.view(queued_id).unwrap().status, "waiting");
+        manager.remove(queued_id, false).await.unwrap();
         manager.remove(id, true).await.unwrap();
         assert_eq!(std::fs::read(&unrelated_file).unwrap(), b"preserve");
         server.abort();
         manager.remove(original_id, false).await.unwrap();
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn maximum_parallel_download_setting_persists_and_is_clamped() {
+        let data_dir = std::env::temp_dir().join(format!(
+            "irani-idm-parallel-settings-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let manager = Manager::load(&data_dir);
+        assert_eq!(manager.max_parallel(), 3);
+        manager.set_max_parallel(12).unwrap();
+        assert_eq!(Manager::load(&data_dir).max_parallel(), 12);
+        manager.set_max_parallel(99).unwrap();
+        assert_eq!(manager.max_parallel(), 32);
+        std::fs::remove_dir_all(data_dir).unwrap();
     }
 
     #[test]

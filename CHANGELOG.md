@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0]
+
+### Added
+- Add daily download scheduling with configurable start/end times and optional shutdown or sleep actions at the end of the schedule.
+- Add a configurable limit for simultaneous downloads; excess downloads wait in the queue.
+- Add a pastel color palette and animated sparkle effects to the main and download-detail windows.
+
+### Changed
+- Improve the glass UI, download-list rendering and selection behavior; reverse horizontal hover motion in RTL languages.
+
+### Fixed
+- Trigger the configured end action when a schedule ends.
+- Apply language changes to open download-detail windows and stop the empty-search indicator from blinking indefinitely.
+
 ## [1.16.0]
 
 ### Added

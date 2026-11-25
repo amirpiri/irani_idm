@@ -30,6 +30,8 @@
 :root[data-theme="dark"][data-palette="coral"]{--bg:#2d201f;--card:#3c2b29;--tx:#fff0ed;--mut:#c5a09a;--bd:#60413d;--ac:#ff9385}
 :root[data-palette="graphite"]{--bg:#eff1f3;--card:#fff;--tx:#252b33;--mut:#707b87;--bd:#d9dee4;--ac:#566474}
 :root[data-theme="dark"][data-palette="graphite"]{--bg:#1d2229;--card:#292f38;--tx:#edf1f5;--mut:#a2acb8;--bd:#414b58;--ac:#a8bacd}
+:root[data-palette="pastel"]{--bg:#f6f1fb;--card:#fffaff;--tx:#372f45;--mut:#756b83;--bd:#e7dff0;--ac:#9667c7;--ok:#6daa8a;--er:#d97791}
+:root[data-theme="dark"][data-palette="pastel"]{--bg:#211c2b;--card:#2d2639;--tx:#f7efff;--mut:#b4a5c4;--bd:#493b57;--ac:#c49aef;--ok:#7cc9a4;--er:#f08eab}
 :root{--app-scale:1;--app-font-size:14px}
 *{box-sizing:border-box}
 html,body{min-height:100%;margin:0}
@@ -83,6 +85,43 @@ input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--b
  .stats{grid-template-columns:minmax(0,1fr)}
  .limit{flex-wrap:wrap}
 }
+body{background:radial-gradient(ellipse at 6% -12%,color-mix(in srgb,var(--ac) 20%,transparent),transparent 44%),radial-gradient(ellipse at 98% 12%,color-mix(in srgb,var(--ac) 11%,transparent),transparent 36%),linear-gradient(145deg,var(--bg),color-mix(in srgb,var(--bg) 88%,var(--ac)));background-attachment:fixed}
+.card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 76%,transparent),color-mix(in srgb,var(--card) 56%,var(--ac)));backdrop-filter:blur(30px) saturate(1.6);-webkit-backdrop-filter:blur(30px) saturate(1.6);border-color:color-mix(in srgb,var(--ac) 26%,var(--bd));box-shadow:0 14px 36px color-mix(in srgb,#000 8%,transparent),0 0 28px color-mix(in srgb,var(--ac) 10%,transparent),inset 0 1px color-mix(in srgb,#fff 68%,transparent)}
+.progress{box-shadow:inset 0 1px 5px color-mix(in srgb,#000 12%,transparent),0 0 0 1px color-mix(in srgb,var(--ac) 12%,transparent)}
+.progress>span{box-shadow:0 0 14px color-mix(in srgb,var(--ac) 48%,transparent)}
+.progress.is-active>span{filter:saturate(1.15)}
+.pieces{box-shadow:inset 0 1px 5px color-mix(in srgb,#000 10%,transparent)}
+.piece>span{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--ac) 45%,transparent))}
+button,input{transition:border-color .18s ease,background .18s ease,box-shadow .18s ease,transform .18s ease}
+button{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 74%,transparent),color-mix(in srgb,var(--card) 54%,var(--ac)));backdrop-filter:blur(18px) saturate(1.45);-webkit-backdrop-filter:blur(18px) saturate(1.45);border-color:color-mix(in srgb,var(--ac) 20%,var(--bd));box-shadow:0 5px 16px color-mix(in srgb,#000 6%,transparent),inset 0 1px color-mix(in srgb,#fff 68%,transparent)}
+button:hover:not(:disabled){border-color:var(--ac);box-shadow:0 7px 20px color-mix(in srgb,var(--ac) 16%,transparent),inset 0 1px color-mix(in srgb,#fff 48%,transparent);transform:translateY(-1px)}
+.primary{background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 72%,#fff));box-shadow:0 5px 20px color-mix(in srgb,var(--ac) 34%,transparent),inset 0 1px color-mix(in srgb,#fff 45%,transparent)}
+input{background:color-mix(in srgb,var(--bg) 62%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:color-mix(in srgb,var(--ac) 18%,var(--bd))}
+input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 15%,transparent),0 0 18px color-mix(in srgb,var(--ac) 12%,transparent)}
+button:focus-visible,input:focus-visible{outline:2px solid color-mix(in srgb,var(--ac) 78%,transparent);outline-offset:2px}
+#error:not(:empty){padding:9px 12px;border:1px solid color-mix(in srgb,var(--er) 35%,var(--bd));border-radius:9px;background:color-mix(in srgb,var(--card) 78%,transparent);backdrop-filter:blur(12px)}
+@media(prefers-reduced-motion:reduce){button,input{transition:none}button:hover:not(:disabled){transform:none}}
+body{position:relative;isolation:isolate}
+body::before{content:"";position:fixed;z-index:-1;inset:-35%;pointer-events:none;background:radial-gradient(ellipse at 34% 38%,color-mix(in srgb,var(--ac) 10%,transparent),transparent 30%),radial-gradient(ellipse at 70% 66%,color-mix(in srgb,var(--ac) 8%,transparent),transparent 28%);filter:blur(34px);animation:ambient-drift 22s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;z-index:2;inset:0;pointer-events:none;opacity:.34;background-image:radial-gradient(ellipse 1px 8px at 8% 18%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 8px 1px at 8% 18%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 8% 18%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.4px,transparent 3px),radial-gradient(ellipse 1px 7px at 51% 12%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 7px 1px at 51% 12%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 51% 12%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.3px,transparent 3px),radial-gradient(ellipse 1px 8px at 94% 78%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(ellipse 8px 1px at 94% 78%,color-mix(in srgb,#fff 70%,var(--ac)) 0 48%,transparent 100%),radial-gradient(circle at 94% 78%,color-mix(in srgb,#fff 62%,var(--ac)) 0 1.4px,transparent 3px),radial-gradient(circle at 27% 68%,color-mix(in srgb,#fff 68%,var(--ac)) 0 1px,transparent 2.5px),radial-gradient(circle at 73% 37%,color-mix(in srgb,#fff 72%,var(--ac)) 0 1.1px,transparent 2.7px),radial-gradient(circle at 39% 91%,color-mix(in srgb,#fff 72%,var(--ac)) 0 1px,transparent 2.5px);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--ac) 62%,transparent));animation:glitter-twinkle 6s ease-in-out infinite alternate}
+@keyframes ambient-drift{0%{transform:translate3d(-2%,1%,0) scale(.96)}100%{transform:translate3d(3%,-2%,0) scale(1.06)}}
+@keyframes glitter-twinkle{0%,100%{opacity:.26}50%{opacity:.52}}
+@keyframes rise-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+main>.card{animation:rise-in .5s cubic-bezier(.2,.75,.25,1) both}
+main>.card:nth-of-type(2){animation-delay:.08s}
+main>.card:nth-of-type(3){animation-delay:.16s}
+.stat{transition:color .18s ease,transform .18s ease}
+.stat:hover{color:var(--ac);transform:translateX(2px)}
+html[dir="rtl"] .stat:hover{transform:translateX(-2px)}
+.progress{border-radius:9px}
+.progress.is-active>span::before{content:"";position:absolute;inset:0 auto 0 -35%;width:30%;background:linear-gradient(90deg,transparent,color-mix(in srgb,#fff 48%,transparent),transparent);animation:progress-sheen 2.4s ease-in-out infinite}
+@keyframes progress-sheen{0%{transform:translateX(0);opacity:0}20%{opacity:.9}75%{opacity:.9}100%{transform:translateX(470%);opacity:0}}
+.card:hover{border-color:color-mix(in srgb,var(--ac) 32%,var(--bd));box-shadow:0 15px 38px color-mix(in srgb,#000 9%,transparent),0 0 30px color-mix(in srgb,var(--ac) 11%,transparent),inset 0 1px color-mix(in srgb,#fff 52%,transparent);transition:border-color .22s ease,box-shadow .22s ease}
+.primary:hover:not(:disabled){filter:brightness(1.06);box-shadow:0 8px 26px color-mix(in srgb,var(--ac) 42%,transparent),inset 0 1px color-mix(in srgb,#fff 52%,transparent)}
+details.section-title>summary{transition:color .18s ease}
+details.section-title>summary:hover{color:var(--ac)}
+.proxy-badge{box-shadow:0 0 14px color-mix(in srgb,var(--ok) 13%,transparent)}
+@media(prefers-reduced-motion:reduce){body::before,body::after,main>.card,.progress.is-active>span::before{animation:none!important}.stat,details.section-title>summary{transition:none}.stat:hover,html[dir="rtl"] .stat:hover{transform:none}}
 </style>
 </head>
 <body>
@@ -129,9 +168,9 @@ const id=Number(currentWindow.label.slice("download-".length));
 const supportedLanguages=["en","fa","zh","ru","ar","ur","nl","es"];
 const navigatorLanguage=navigator.language.toLowerCase();
 const detectedLanguage=supportedLanguages.find(code=>navigatorLanguage.startsWith(code))||"en";
-const lang=supportedLanguages.includes(localStorage.lang)?localStorage.lang:detectedLanguage;
+let lang=supportedLanguages.includes(localStorage.lang)?localStorage.lang:detectedLanguage;
 let themeMode=["system","light","dark"].includes(localStorage.theme)?localStorage.theme:"system";
-const colorThemes=["ocean","violet","emerald","sunset","rose","cyan","amber","indigo","mint","coral","graphite"];
+const colorThemes=["ocean","violet","emerald","sunset","rose","cyan","amber","indigo","mint","coral","graphite","pastel"];
 let colorTheme=colorThemes.includes(localStorage.colorTheme)?localStorage.colorTheme:"ocean";
 function applyDisplaySettings(){
  const readSetting=(key,min,max,fallback)=>{
@@ -184,13 +223,23 @@ function applyTheme(){
 }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(themeMode==="system")applyTheme()});
 window.addEventListener("storage",event=>{
+ if(event.key==="lang")applyLanguage(supportedLanguages.includes(event.newValue)?event.newValue:detectedLanguage);
  if(event.key==="theme"){themeMode=["system","light","dark"].includes(event.newValue)?event.newValue:"system";applyTheme()}
  if(event.key==="colorTheme"){colorTheme=colorThemes.includes(event.newValue)?event.newValue:"ocean";applyTheme()}
  if(event.key==="appScale"||event.key==="appFontSize")applyDisplaySettings();
 });
 const localeForLang=()=>({fa:"fa-IR",zh:"zh-CN",ru:"ru-RU",ar:"ar-SA",ur:"ur-PK",nl:"nl-NL",es:"es-ES"}[lang]||"en-US");
 const nf=(value,digits=1)=>new Intl.NumberFormat(localeForLang(),{maximumFractionDigits:digits}).format(value);
-const addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":localeForLang(),{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+let addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":localeForLang(),{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+function applyLanguage(nextLang=lang){
+ if(!supportedLanguages.includes(nextLang))return;
+ lang=nextLang;
+ document.documentElement.lang=lang;
+ document.documentElement.dir=["fa","ar","ur"].includes(lang)?"rtl":"ltr";
+ document.querySelectorAll("[data-i]").forEach(element=>element.textContent=t(element.dataset.i));
+ addedAtFormat=new Intl.DateTimeFormat(lang==="fa"?"fa-IR-u-ca-persian":localeForLang(),{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+ if(currentDownload)render(currentDownload);
+}
 function bytes(value){
  if(value==null)return"—";
  const units=["B","KB","MB","GB","TB"];let unit=0;
@@ -308,10 +357,7 @@ async function action(command,args={}){
  try{showError();await invoke(command,{id,...args})}
  catch(error){showError(String(error))}
 }
-document.documentElement.lang=lang;
-document.documentElement.lang=lang;
-document.documentElement.dir=["fa","ar","ur"].includes(lang)?"rtl":"ltr";
-document.querySelectorAll("[data-i]").forEach(element=>element.textContent=t(element.dataset.i));
+applyLanguage();
 applyTheme();
 applyDisplaySettings();
 $("downloadToggle").addEventListener("click",()=>action(currentDownload?.status==="downloading"?"pause":"resume"));
@@ -329,6 +375,7 @@ listen("proxy-settings-changed",event=>{
  proxyEnabled=Boolean(event.payload);
  $("proxyBadge").hidden=!(proxyEnabled&&currentDownload?.proxy_used&&currentDownload?.status==="downloading");
 }).catch(error=>showError(String(error)));
+listen("language-changed",event=>applyLanguage(event.payload)).catch(error=>showError(String(error)));
 invoke("download_view",{id}).then(render).catch(error=>showError(String(error)));
 </script>
 </body>
