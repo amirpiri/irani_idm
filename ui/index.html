@@ -360,6 +360,8 @@ Object.assign(T.en,{parallelDownloads:"Maximum simultaneous downloads",downloadS
 Object.assign(T.fa,{parallelDownloads:"حداکثر دانلود هم‌زمان",downloadSchedule:"زمان‌بندی دانلود",schedulerEnabled:"فعال‌سازی زمان‌بندی دانلود",scheduleStart:"زمان شروع",scheduleEnd:"زمان پایان",schedulerEndAction:"هنگام پایان زمان‌بندی",st_waiting:"در صف انتظار"});
 Object.assign(T.en,{emptyDownloads:"Your download list is clear",emptyDownloadsHint:"Add a link to start downloading. Your active downloads will appear here.",emptySearch:"No matching downloads",emptySearchHint:"Try another search or clear the current filters.",addFirstDownload:"Add a download",clearFilters:"Clear filters"});
 Object.assign(T.fa,{emptyDownloads:"فهرست دانلود خالی است",emptyDownloadsHint:"برای شروع، یک پیوند اضافه کنید. دانلودهای فعال اینجا نمایش داده می‌شوند.",emptySearch:"دانلودی پیدا نشد",emptySearchHint:"عبارت دیگری جستجو کنید یا فیلترها را پاک کنید.",addFirstDownload:"افزودن دانلود",clearFilters:"پاک کردن فیلترها"});
+Object.assign(T.en,{browserInstallHint:"Firefox opens its published Mozilla Add-ons listing; Chrome and Edge open their installation guides."});
+Object.assign(T.fa,{browserInstallHint:"گزینهٔ Firefox صفحهٔ افزونه در فروشگاه موزیلا را باز می‌کند؛ گزینه‌های Chrome و Edge راهنمای نصب را باز می‌کنند."});
 const EXT={compressed:"zip rar 7z gz bz2 xz tar tgz iso",documents:"pdf doc docx xls xlsx ppt pptx txt epub odt",music:"mp3 flac wav aac ogg m4a",
  programs:"exe msi deb rpm appimage apk dmg",video:"mp4 mkv avi mov wmv webm flv",images:"jpg jpeg png gif webp bmp svg"};
 const CATS=["all",...Object.keys(EXT),"unfinished","completed"];
@@ -653,8 +655,9 @@ async function openProjectPage(){
 }
 async function openBrowserGuide(browser){
  try{
-  await invoke("open_browser_install_guide",{browser,language:lang});
- }catch(error){alert(t("browserGuideFailed")+"\n"+error)}
+  if(browser==="firefox")await invoke("open_firefox_addon_page");
+  else await invoke("open_browser_install_guide",{browser,language:lang});
+ }catch(error){alert(String(error))}
 }
 let updateDownloadUrl="";
 async function checkForUpdate(manual=false){

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1]
+
+### Added
+- Add a direct link to the published Firefox Add-ons listing from Browser integration settings.
+
+### Changed
+- Refresh the README main-window screenshot to show the 2.0 glass interface.
+
 ## [2.0.0]
 
 ### Added

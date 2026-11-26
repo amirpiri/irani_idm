@@ -26,6 +26,15 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
 - Locally bundled Vazirmatn fonts and colorful vector toolbar icons for consistent rendering
 - Browser integration that sends HTTP/HTTPS downloads to Irani IDM
 
+### Recent additions (November 12–26, 2026)
+- Daily download scheduling with an optional shutdown or sleep action, plus a configurable cap on simultaneous downloads.
+- Adaptive connection balancing, saved connection-count and download-folder preferences, and consistent settings across manual, browser, and `iranidm://` downloads.
+- Download-added timestamps and sorting, clearer update checks with release notes, and safer temporary-file handling during downloads.
+- System-tray controls and background operation when the main window is closed.
+- Browser handoff with first-run consent and a toolbar toggle; Chrome and Edge use automatic Native Messaging setup, and Firefox is available as a signed Mozilla Add-ons release.
+- New Chinese, Russian, Arabic, Urdu, Dutch, and Spanish translations, including RTL support for Arabic and Urdu.
+- The 2.0 glass interface, pastel theme, and animated sparkle effects.
+
 ## Screenshots
 
 <table>
@@ -99,27 +108,25 @@ description. If a matching version section is missing, it uses `Unreleased`.
 ## Browser integration (Chrome / Edge / Firefox)
 
 1. Install Irani IDM and launch it once so Windows can register the `iranidm://` URL handler and install the bundled Native Messaging host (this also works with the portable build).
-2. Open **Settings → General → Browser integration** and choose Chrome, Edge, or Firefox. The app opens the matching step-by-step guide in the language currently selected in Settings. The guides explain how to download the correct release ZIP, extract it, and load it in the browser.
-3. Chrome and Edge load the extracted extension folder with **Developer mode → Load unpacked**. Restart Irani IDM after loading it; the app discovers the extension ID and registers Native Messaging automatically. Firefox 140 or later loads `manifest.json` through **Load Temporary Add-on…**; Firefox removes temporary add-ons when it closes. Permanent Firefox installation requires the signed AMO version after publication.
+2. Open **Settings → General → Browser integration**. The Firefox button opens the published [Mozilla Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/irani-idm-browser-integration/); Chrome and Edge open their step-by-step installation guides in the language currently selected in Settings. The Firefox guide is available from the repository for temporary testing.
+3. Install Firefox directly from Mozilla Add-ons. For Chrome and Edge, download the matching ZIP from a GitHub release, extract it, then use **Developer mode → Load unpacked**. Restart Irani IDM after loading either Chrome or Edge extension; the app discovers its ID and registers Native Messaging automatically.
 4. After installation, review the extension's first-run consent page. Download handoff is disabled until the user explicitly enables it. Use the Irani IDM toolbar button to turn download catching on or off at any time; the full Options page remains available for privacy details. If no choice has been saved and the user starts a download, the extension opens Options once to remind them; it never enables handoff automatically. Firefox additionally asks for its optional download-URL and download-action data permissions; handoff stays disabled if either is denied or revoked. Once enabled, HTTP/HTTPS downloads started in the browser are handed to Irani IDM and saved in the app's Downloads folder using its default eight connections. Turning handoff off leaves downloads in the browser. Links requiring an authenticated browser session, cookies, or browser-only headers may not be downloadable by the app.
 
 The complete [English and Persian browser installation guides](docs/extensions/README.md) are also available directly in the repository.
 
 ### Browser store publication
 
-The Chrome Web Store, Microsoft Edge Add-ons, and Firefox Add-ons listings are
-being prepared but are **not published yet**. Store publication requires the
-publisher's own enrolled developer account and approval from each store.
-Chrome Web Store developer registration currently requires a one-time $5 fee
-and is limited to Google's supported registration countries/regions (Iran is
-not currently listed). Microsoft Edge's extension developer registration has
-no registration fee;
-Firefox requires AMO developer registration and add-on review. The extension
+The Firefox add-on is [published on Mozilla Add-ons](https://addons.mozilla.org/en-US/firefox/addon/irani-idm-browser-integration/). The Chrome Web Store and Microsoft Edge Add-ons listings are
+being prepared but are **not published yet**. Publishing those listings
+requires the publisher's enrolled developer account and approval from each
+store. Chrome Web Store developer registration currently requires a one-time
+$5 fee and is limited to Google's supported registration countries/regions
+(Iran is not currently listed). Microsoft Edge extension developer
+registration has no registration fee. The extension
 packages, privacy policy, listing descriptions, reviewer notes, and store
 graphics are maintained under `browser-extension/`. See
 [`STORE_LISTING.md`](browser-extension/STORE_LISTING.md) for preparation
-commands and the browser-specific listing files. Official store links will be
-added here after approval and publication.
+commands and the browser-specific listing files.
 
 The Windows portable ZIP contains `irani-idm.exe` and its `irani-idm-native-host.exe`
 companion; keep both files together when extracting and running the app. Windows
@@ -128,4 +135,4 @@ WebView2 Runtime is still required (it is preinstalled on most Windows 10/11 sys
 Icons are generated from `app-icon.png` if `src-tauri/icons/` doesn't exist. Replace `app-icon.png` with your own logo (1024x1024 PNG) any time.
 
 ## Ideas for next steps
-Scheduler, download queue concurrency limit, YouTube/HLS support.
+YouTube/HLS support.

@@ -8,4 +8,6 @@ Choose the guide for your browser and preferred language:
 | Microsoft Edge | [Install in Edge](edge/README.en.md) | [نصب در اج](edge/README.fa.md) |
 | Mozilla Firefox | [Install in Firefox](firefox/README.en.md) | [نصب در فایرفاکس](firefox/README.fa.md) |
 
-The application opens the matching browser and language guide from Settings → General → Browser integration.
+From Settings → General → Browser integration, the Firefox button opens the
+[published Mozilla Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/irani-idm-browser-integration/).
+Chrome and Edge buttons open their language-matched installation guides.

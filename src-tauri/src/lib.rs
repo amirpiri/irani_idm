@@ -28,6 +28,8 @@ extern "system" {
 }
 
 const PROJECT_URL: &str = "https://github.com/amirpiri/irani_idm";
+const FIREFOX_ADDON_URL: &str =
+    "https://addons.mozilla.org/en-US/firefox/addon/irani-idm-browser-integration/";
 const LATEST_RELEASE_API: &str = "https://api.github.com/repos/amirpiri/irani_idm/releases/latest";
 
 #[derive(Clone)]
@@ -206,6 +208,12 @@ fn release_version(tag: &str) -> Result<Version, String> {
 #[tauri::command]
 fn open_project_page() -> Result<(), String> {
     open::that(PROJECT_URL).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn open_firefox_addon_page() -> Result<(), String> {
+    open::that(FIREFOX_ADDON_URL)
+        .map_err(|error| format!("Could not open Firefox Add-ons: {error}"))
 }
 
 #[tauri::command]
@@ -1295,6 +1303,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             open_project_page,
+            open_firefox_addon_page,
             open_browser_install_guide,
             open_release_page,
             app_version,
@@ -1345,7 +1354,7 @@ mod tests {
     use super::{
         browser_install_guide_url, release_version, schedule_ended, schedule_is_active,
         scheduler_end_action, validate_scheduler_settings, CompletionTracker, ConnectionSettings,
-        SchedulerSettings, SchedulerState,
+        SchedulerSettings, SchedulerState, FIREFOX_ADDON_URL,
     };
     use chrono::NaiveTime;
 
@@ -1493,6 +1502,14 @@ mod tests {
         );
         assert!(browser_install_guide_url("unknown", "en").is_err());
         assert!(browser_install_guide_url("edge", "de").is_err());
+    }
+
+    #[test]
+    fn firefox_addon_page_uses_the_published_amo_listing() {
+        assert_eq!(
+            FIREFOX_ADDON_URL,
+            "https://addons.mozilla.org/en-US/firefox/addon/irani-idm-browser-integration/"
+        );
     }
 
     #[test]
