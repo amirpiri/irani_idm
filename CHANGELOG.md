@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2]
+
+### Changed
+- Refresh the README screenshots with the current main window, download details, and Persian settings screens.
+
 ## [2.0.1]
 
 ### Added

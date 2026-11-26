@@ -47,15 +47,27 @@ Rust backend (reqwest + tokio) + Tauri 2 shell. The UI is plain HTML/CSS/JS in `
   <tbody>
     <tr>
       <td><strong>Main window</strong><br><img src="screenshots/english-main.png" alt="Irani IDM main window in English" width="100%"></td>
-      <td><strong>پنجره اصلی</strong><br><img src="screenshots/persian-main.png" alt="پنجره اصلی برنامه در فارسی" width="100%"></td>
+      <td><strong>پنجره اصلی</strong><br><img src="screenshots/persian-main.webp" alt="پنجره اصلی برنامه در فارسی" width="100%"></td>
     </tr>
     <tr>
-      <td><strong>Download details</strong><br><img src="screenshots/english-download-details.png" alt="Download details in English" width="100%"></td>
+      <td><strong>Download details</strong><br><img src="screenshots/english-download-details.webp" alt="Download details in English" width="100%"></td>
       <td><strong>جزئیات دانلود</strong><br><img src="screenshots/persian-download-details.png" alt="جزئیات دانلود به فارسی" width="100%"></td>
     </tr>
     <tr>
       <td><strong>Settings</strong><br><img src="screenshots/english-settings.png" alt="Irani IDM settings in English" width="100%"></td>
-      <td><strong>تنظیمات</strong><br><img src="screenshots/persian-settings.png" alt="تنظیمات برنامه به فارسی" width="100%"></td>
+      <td><strong>تنظیمات</strong><br><img src="screenshots/persian-settings-general.webp" alt="تنظیمات عمومی برنامه به فارسی" width="100%"></td>
+    </tr>
+  </tbody>
+</table>
+
+### More Persian screens
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Wide main window</strong><br><img src="screenshots/persian-main-wide.webp" alt="Irani IDM wide main window in Persian" width="100%"></td>
+      <td><strong>Appearance settings</strong><br><img src="screenshots/persian-settings-appearance.webp" alt="تنظیمات حالت نمایش و رنگ‌بندی" width="100%"></td>
+      <td><strong>Proxy settings</strong><br><img src="screenshots/persian-settings-proxy.webp" alt="تنظیمات پراکسی" width="100%"></td>
     </tr>
   </tbody>
 </table>
